@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<meta name="theme-color" content="#FF4D00">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Delivery Hub">
+<meta name="description" content="Same-day delivery - book, track, deliver">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Delivery Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+:root{
+  --or:#FF4D00;--or2:#FF7A33;--ye:#FFD000;
+  --bk:#0A0A0A;--gr:#161616;--gr2:#1E1E1E;--mi:#2A2A2A;
+  --wh:#F7F4EF;--mu:#777;
+  --su:#22c55e;--er:#ef4444;--bl:#3b82f6;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bk);color:var(--wh);font-family:'DM Sans',sans-serif;font-size:14px}
+.hidden{display:none!important}
+/* Bebas Neue helper classes */
+.bb{font-family:'Bebas Neue',sans-serif}
+.bb-lg{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.04em}
+.bb-xl{font-family:'Bebas Neue',sans-serif;font-size:clamp(2rem,8vw,3.5rem);letter-spacing:0.04em}
+.bb-sm{font-family:'Bebas Neue',sans-serif;font-size:1.4rem}
+.bb-price{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--or)}
+/* Leaflet dark */
+.leaflet-container{background:#111!important}
+.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(0.85) saturate(0.7)}
+.leaflet-control-zoom a{background:var(--gr)!important;color:var(--wh)!important;border-color:var(--mi)!important}
+/* Scrollbar */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--or);border-radius:3px}
+/* Loading */
+#loading{position:fixed;inset:0;background:var(--bk);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999}
+.ld-logo{font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:0.12em;display:flex;align-items:center;gap:0.6rem;margin-bottom:1.5rem}
+.ld-dot{width:14px;height:14px;border-radius:50%;background:var(--or);animation:blink 1.2s ease-in-out infinite}
+.ld-bar{width:160px;height:3px;background:var(--mi);border-radius:2px;overflow:hidden}
+.ld-fill{height:100%;background:linear-gradient(90deg,var(--or),var(--ye));animation:ldfill 1.5s ease-in-out infinite}
+@keyframes ldfill{0%{width:0;margin-left:0}60%{width:100%}100%{width:0;margin-left:100%}}
+/* Auth */
+#auth{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;overflow:auto;position:relative}
+#auth::before{content:'';position:fixed;top:-30%;left:-20%;width:600px;height:600px;background:radial-gradient(circle,rgba(255,77,0,0.09),transparent 70%);pointer-events:none}
+.auth-logo{font-family:'Bebas Neue',sans-serif;font-size:2.6rem;letter-spacing:0.1em;display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem}
+.auth-tagline{font-size:0.78rem;color:var(--mu);letter-spacing:0.1em;margin-bottom:2rem}
+.auth-box{background:linear-gradient(145deg,#1c1c1c,#141414);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:1.8rem;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+.auth-tabs{display:flex;margin-bottom:1.5rem;background:var(--bk);border-radius:8px;padding:3px}
+.auth-tab{flex:1;padding:0.6rem;text-align:center;font-size:0.78rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;border-radius:6px;cursor:pointer;color:var(--mu);transition:all 0.2s}
+.auth-tab.active{background:var(--or);color:var(--wh)}
+.form-group{margin-bottom:1rem}
+.form-label{font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--mu);margin-bottom:0.35rem;display:block}
+.form-input{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--mi);border-radius:8px;padding:0.72rem 1rem;color:var(--wh);font-family:'DM Sans',sans-serif;font-size:0.88rem;outline:none;transition:border-color 0.2s}
+.form-input:focus{border-color:var(--or)}
+.form-select{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--mi);border-radius:8px;padding:0.72rem 1rem;color:var(--wh);font-family:'DM Sans',sans-serif;font-size:0.88rem;outline:none;appearance:none}
+.btn-full{width:100%;padding:0.9rem;background:linear-gradient(135deg,var(--or),#c43200);color:var(--wh);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:opacity 0.2s;margin-top:0.5rem}
+.btn-full:hover{opacity:0.9}
+.btn-full:active{transform:scale(0.98)}
+.btn-full:disabled{opacity:0.5;cursor:not-allowed}
+.btn-outline{width:100%;padding:0.82rem;background:transparent;color:var(--or2);border:1.5px solid var(--or);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;margin-top:0.5rem}
+.err-msg{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;padding:0.6rem 0.8rem;border-radius:6px;font-size:0.78rem;margin-bottom:1rem}
+.auth-demo{margin-top:1.2rem;padding:0.9rem;background:rgba(255,77,0,0.06);border:1px solid rgba(255,77,0,0.18);border-radius:8px;font-size:0.74rem;color:var(--mu);line-height:1.8}
+.auth-demo b{color:var(--or2)}
+/* App shell */
+#app{height:100vh;display:flex;flex-direction:column}
+.topbar{background:rgba(14,14,14,0.95);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.05);padding:0.9rem 1.2rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:10}
+.topbar-logo{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:0.08em;display:flex;align-items:center;gap:0.4rem}
+.top-right{display:flex;align-items:center;gap:0.8rem}
+.notif-btn{position:relative;width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.06);color:var(--wh);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.notif-badge{position:absolute;top:-3px;right:-3px;width:16px;height:16px;background:var(--or);border-radius:50%;font-size:0.6rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+.av-btn{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--or),#c43200);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;cursor:pointer;border:none;color:var(--wh)}
+.app-content{flex:1;overflow:hidden;position:relative}
+.view{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1.2rem}
+.bottom-nav{background:rgba(14,14,14,0.97);backdrop-filter:blur(12px);border-top:1px solid rgba(255,255,255,0.05);display:flex;flex-shrink:0;padding:0.4rem 0 env(safe-area-inset-bottom,0.6rem)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:0.2rem;padding:0.5rem 0;cursor:pointer;color:var(--mu);transition:color 0.2s;border:none;background:none;font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent}
+.nav-item.active{color:var(--or)}
+.nav-icon{font-size:1.25rem;line-height:1;transition:transform 0.2s}
+.nav-item.active .nav-icon{transform:scale(1.15)}
+.nav-label{font-size:0.58rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase}
+/* Cards */
+.card{background:linear-gradient(145deg,#1c1c1c,#141414);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:1.2rem;margin-bottom:1rem;box-shadow:0 4px 24px rgba(0,0,0,0.25)}
+.card-sm{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:1rem}
+.stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:0.8rem;margin-bottom:1rem}
+.stats-row.c3{grid-template-columns:repeat(3,1fr)}
+.stat-card{background:linear-gradient(145deg,#1c1c1c,#141414);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:1rem;text-align:center;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:-20px;right:-20px;width:60px;height:60px;border-radius:50%;background:rgba(255,77,0,0.07)}
+.stat-n{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--or);line-height:1}
+.stat-l{font-size:0.63rem;color:var(--mu);letter-spacing:0.05em;margin-top:0.3rem}
+/* Badges */
+.badge{display:inline-flex;align-items:center;padding:0.22rem 0.7rem;border-radius:100px;font-size:0.63rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase}
+.b-pending{background:rgba(255,208,0,0.12);color:var(--ye)}
+.b-accepted{background:rgba(59,130,246,0.12);color:var(--bl)}
+.b-picked{background:rgba(255,122,51,0.12);color:var(--or2)}
+.b-transit{background:rgba(255,77,0,0.15);color:var(--or)}
+.b-delivered{background:rgba(34,197,94,0.12);color:var(--su)}
+.b-cancelled{background:rgba(239,68,68,0.12);color:var(--er)}
+/* Order cards */
+.order-card{background:linear-gradient(145deg,#1a1a1a,#141414);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:1.1rem;margin-bottom:0.8rem;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:border-color 0.2s}
+.order-card:active{border-color:rgba(255,77,0,0.35);transform:scale(0.99)}
+.oc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.7rem}
+.oc-id{font-size:0.68rem;color:var(--mu);letter-spacing:0.08em}
+.oc-route{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem}
+.rd{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.rd-from{background:var(--or)}
+.rd-to{background:var(--ye)}
+.rl{width:2px;height:18px;background:linear-gradient(var(--or),var(--ye));margin:2px 3px}
+.ra{font-size:0.82rem;font-weight:500;line-height:1.3}
+.oc-bot{display:flex;justify-content:space-between;align-items:center;margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(255,255,255,0.04)}
+.oc-price{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--or)}
+/* Quick actions */
+.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:0.7rem;margin-bottom:1.2rem}
+.qa-btn{background:linear-gradient(145deg,#1c1c1c,#141414);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:0.9rem 0.4rem;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all 0.2s}
+.qa-btn:active{transform:scale(0.92);border-color:rgba(255,77,0,0.4)}
+.qa-icon{font-size:1.4rem;margin-bottom:0.35rem}
+.qa-label{font-size:0.6rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--mu)}
+/* Promo banner */
+.promo-banner{background:linear-gradient(135deg,#1a1205,#2a1a00);border:1px solid rgba(255,208,0,0.2);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.8rem;position:relative;overflow:hidden}
+.promo-banner::after{content:'🏷';position:absolute;right:-5px;top:-5px;font-size:3rem;opacity:0.12;pointer-events:none}
+/* Map */
+#live-map{height:220px;border-radius:12px;overflow:hidden;margin-bottom:1rem;border:1px solid var(--mi)}
+/* Progress steps */
+.progress-steps{display:flex;align-items:flex-start;margin:1.2rem 0}
+.prog-step{flex:1;display:flex;flex-direction:column;align-items:center;gap:0.3rem;position:relative}
+.prog-step:not(:last-child)::after{content:'';position:absolute;top:10px;left:60%;width:80%;height:2px;background:var(--mi);z-index:0}
+.prog-step.done:not(:last-child)::after{background:var(--or)}
+.prog-dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--mi);background:var(--gr);display:flex;align-items:center;justify-content:center;font-size:0.68rem;z-index:1;position:relative}
+.prog-step.done .prog-dot{border-color:var(--or);background:var(--or);color:var(--wh)}
+.prog-step.active .prog-dot{border-color:var(--or);color:var(--or);animation:pb 1.5s ease-in-out infinite}
+.prog-lbl{font-size:0.56rem;color:var(--mu);text-align:center;line-height:1.3}
+.prog-step.done .prog-lbl,.prog-step.active .prog-lbl{color:var(--wh)}
+@keyframes pb{0%,100%{box-shadow:0 0 0 0 rgba(255,77,0,0.4)}50%{box-shadow:0 0 0 6px rgba(255,77,0,0)}}
+/* Chat */
+.chat-wrap{display:flex;flex-direction:column;height:380px}
+.chat-msgs{flex:1;overflow-y:auto;padding:0.8rem;display:flex;flex-direction:column;gap:0.6rem;-webkit-overflow-scrolling:touch}
+.bubble{max-width:78%;padding:0.65rem 0.9rem;border-radius:16px;font-size:0.82rem;line-height:1.5;word-break:break-word}
+.bbl-me{background:linear-gradient(135deg,var(--or),#c43200);color:white;align-self:flex-end;border-bottom-right-radius:4px}
+.bbl-them{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);color:var(--wh);align-self:flex-start;border-bottom-left-radius:4px}
+.bbl-time{font-size:0.58rem;opacity:0.55;margin-top:0.2rem;display:block}
+.chat-inp-row{display:flex;gap:0.5rem;padding:0.8rem;border-top:1px solid var(--mi)}
+.chat-inp-row input{flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--mi);border-radius:24px;padding:0.65rem 1rem;color:var(--wh);font-family:'DM Sans',sans-serif;font-size:0.85rem;outline:none}
+.chat-inp-row input:focus{border-color:var(--or)}
+.chat-send{width:40px;height:40px;border-radius:50%;background:var(--or);border:none;color:white;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* Invoice */
+.inv-wrap{background:white;border-radius:12px;padding:1.4rem;color:#111;margin-bottom:1rem}
+.inv-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;padding-bottom:0.8rem;border-bottom:2px solid #FF4D00}
+.inv-logo{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:0.1em;color:#FF4D00}
+.inv-row{display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid #f0f0f0;font-size:0.8rem;color:#333}
+.inv-row:last-child{border-bottom:none}
+.inv-total{display:flex;justify-content:space-between;padding:0.8rem;background:#FF4D00;border-radius:8px;margin-top:0.8rem;color:white;font-weight:700;font-size:0.9rem}
+/* Promo */
+.promo-inp-wrap{display:flex;gap:0.5rem;margin-bottom:0.8rem}
+.promo-inp-wrap input{flex:1;background:rgba(255,255,255,0.04);border:1.5px solid var(--mi);border-radius:8px;padding:0.7rem 1rem;color:var(--wh);font-family:'DM Sans',sans-serif;font-size:0.85rem;outline:none;text-transform:uppercase;letter-spacing:0.1em}
+.promo-inp-wrap input:focus{border-color:var(--or)}
+.promo-inp-wrap button{background:var(--or);color:white;border:none;border-radius:8px;padding:0.7rem 1rem;font-weight:700;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif}
+.promo-ok{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:0.6rem 0.9rem;font-size:0.8rem;color:var(--su);margin-bottom:0.8rem}
+.promo-chips{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.8rem}
+.promo-chip{padding:0.3rem 0.8rem;background:rgba(255,208,0,0.08);border:1px solid rgba(255,208,0,0.25);border-radius:100px;font-size:0.7rem;font-weight:600;color:var(--ye);cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* Payment options */
+.pay-opt{display:flex;align-items:center;gap:0.9rem;padding:0.85rem;border:1.5px solid rgba(255,255,255,0.07);border-radius:12px;cursor:pointer;margin-bottom:0.6rem;-webkit-tap-highlight-color:transparent;background:rgba(255,255,255,0.02)}
+.pay-opt.sel{border-color:var(--or);background:rgba(255,77,0,0.06)}
+.pay-logo{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;background:rgba(255,77,0,0.08)}
+.pay-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--mi);margin-left:auto;flex-shrink:0;position:relative;transition:all 0.2s}
+.pay-opt.sel .pay-radio{border-color:var(--or);background:var(--or)}
+.pay-opt.sel .pay-radio::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:6px;height:6px;border-radius:50%;background:var(--wh)}
+/* Toggle */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:0.8rem 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.toggle-row:last-child{border-bottom:none}
+.toggle{width:44px;height:24px;background:var(--mi);border-radius:100px;position:relative;cursor:pointer;transition:background 0.3s;flex-shrink:0}
+.toggle.on{background:var(--or)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--wh);transition:transform 0.3s}
+.toggle.on::after{transform:translateX(20px)}
+/* Misc utilities */
+.row{display:flex;align-items:center;justify-content:space-between}
+.row-gap{display:flex;align-items:center;gap:0.8rem}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:0.72rem 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.84rem}
+.info-row:last-child{border-bottom:none}
+.info-key{color:var(--mu);flex-shrink:0}
+.info-val{text-align:right;max-width:60%}
+.eyebrow{font-size:0.68rem;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--or);margin-bottom:0.5rem}
+.p-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--or),#c43200);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;margin:0 auto 1rem}
+.btn-sm{padding:0.45rem 0.9rem;border-radius:8px;border:none;font-family:'DM Sans',sans-serif;font-size:0.75rem;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.btn-green{background:rgba(34,197,94,0.15);color:var(--su);border:1px solid rgba(34,197,94,0.3)}
+.btn-red{background:rgba(239,68,68,0.12);color:var(--er);border:1px solid rgba(239,68,68,0.25)}
+.btn-blue{background:rgba(59,130,246,0.12);color:var(--bl);border:1px solid rgba(59,130,246,0.25)}
+.btn-or{background:var(--or);color:var(--wh);border:none}
+.online-dot{width:8px;height:8px;border-radius:50%;background:var(--su);animation:blink 2s infinite;display:inline-block}
+.offline-dot{width:8px;height:8px;border-radius:50%;background:var(--mu);display:inline-block}
+.earn-bar{background:rgba(255,255,255,0.06);border-radius:4px;height:6px;margin-top:0.4rem;overflow:hidden}
+.earn-fill{height:100%;background:linear-gradient(90deg,var(--or),var(--ye));border-radius:4px}
+.tab-row{display:flex;gap:0.5rem;margin-bottom:1rem;overflow-x:auto;padding-bottom:0.3rem;-webkit-overflow-scrolling:touch}
+.tab-btn{padding:0.45rem 1rem;border-radius:100px;border:1px solid var(--mi);background:transparent;color:var(--mu);font-family:'DM Sans',sans-serif;font-size:0.73rem;font-weight:600;cursor:pointer;white-space:nowrap}
+.tab-btn.active{background:var(--or);border-color:var(--or);color:var(--wh)}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--mu)}
+.empty-icon{font-size:3rem;margin-bottom:0.8rem}
+.sec-divider{display:flex;align-items:center;gap:0.8rem;margin:1rem 0}
+.sec-line{flex:1;height:1px;background:rgba(255,255,255,0.06)}
+.sec-txt{font-size:0.65rem;font-weight:600;color:var(--mu);letter-spacing:0.15em;text-transform:uppercase;white-space:nowrap}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--or);animation:pulse-a 1.5s ease-in-out infinite;display:inline-block}
+@keyframes pulse-a{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.7)}}
+.stars{display:flex;gap:0.3rem;font-size:1.5rem;cursor:pointer}
+.star{color:var(--mi)}
+.star.lit{color:var(--ye)}
+.step-dots{display:flex;gap:0.4rem;margin-bottom:1.2rem}
+.sdot{flex:1;height:3px;border-radius:2px;background:var(--mi);transition:background 0.3s}
+.sdot.done{background:var(--or)}
+.notif-banner{background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:0.85rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.8rem}
+.notif-banner button{margin-left:auto;background:var(--bl);color:var(--wh);border:none;border-radius:6px;padding:0.4rem 0.8rem;font-size:0.73rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:'DM Sans',sans-serif}
+.admin-header{background:linear-gradient(135deg,var(--or),#c43200);padding:1.5rem 1.2rem;margin:-1.2rem -1.2rem 1.2rem}
+/* Modal */
+#modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:flex-end;backdrop-filter:blur(6px)}
+.modal-box{background:linear-gradient(180deg,#1c1c1c,#161616);border-radius:20px 20px 0 0;padding:1.5rem;width:100%;max-height:90vh;overflow-y:auto;border-top:1px solid rgba(255,255,255,0.07)}
+.modal-handle{width:40px;height:4px;background:var(--mi);border-radius:2px;margin:0 auto 1.2rem}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;margin-bottom:1rem}
+/* Toast */
+#toast{position:fixed;top:1rem;left:50%;transform:translateX(-50%) translateY(-80px);background:#1c1c1c;border:1px solid var(--or);border-radius:10px;padding:0.7rem 1.2rem;font-size:0.82rem;font-weight:500;z-index:999;transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);white-space:nowrap;color:var(--wh);pointer-events:none}
+#toast.show{transform:translateX(-50%) translateY(0)}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<!-- LOADING -->
+<div id="loading">
+  <div class="ld-logo"><div class="ld-dot"></div>DELIVERY HUB</div>
+  <div class="ld-bar"><div class="ld-fill"></div></div>
+</div>
+<!-- AUTH -->
+<div id="auth" class="hidden">
+  <div class="auth-logo"><div style="width:12px;height:12px;border-radius:50%;background:var(--or);animation:blink 1.5s infinite"></div>DELIVERY HUB</div>
+  <div class="auth-tagline">Move Everything. Fast.</div>
+  <div class="auth-box">
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">Login</div>
+      <div class="auth-tab" onclick="switchTab('signup')">Sign Up</div>
+    </div>
+    <div id="auth-err" class="err-msg hidden"></div>
+    <div id="login-form">
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="l-email" type="email" placeholder="your@email.com" autocomplete="email"></div>
+      <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="l-pass" type="password" placeholder="Your password" autocomplete="current-password"></div>
+      <button class="btn-full" id="login-btn" onclick="doLogin()">Login</button>
+    </div>
+    <div id="signup-form" class="hidden">
+      <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="s-name" type="text" placeholder="John Doe"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="s-email" type="email" placeholder="your@email.com"></div>
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="s-phone" type="tel" placeholder="+91 98765 43210"></div>
+      <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="s-pass" type="password" placeholder="Min 6 characters"></div>
+      <div class="form-group"><label class="form-label">I am a</label>
+        <select class="form-select" id="s-role">
+          <option value="customer">Customer - Send packages</option>
+          <option value="driver">Driver - Deliver packages</option>
+          <option value="admin">Admin - Manage platform</option>
+        </select>
+      </div>
+      <button class="btn-full" id="signup-btn" onclick="doSignup()">Create Account</button>
+    </div>
+    <div class="auth-demo">
+      <b>Demo Logins:</b><br>
+      Customer: customer@demo.com / demo123<br>
+      Driver: driver@demo.com / demo123<br>
+      Admin: admin@demo.com / admin123
+    </div>
+  </div>
+</div>
+<!-- APP -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="topbar-logo"><div style="width:8px;height:8px;border-radius:50%;background:var(--or);animation:blink 1.5s infinite;margin-right:0.2rem"></div>DELIVERY HUB</div>
+    <div class="top-right">
+      <button class="notif-btn" onclick="showNotifs()">🔔<div class="notif-badge" id="nb">3</div></button>
+      <button class="av-btn" id="av-btn" onclick="goProfile()">U</button>
+    </div>
+  </div>
+  <div class="app-content">
+    <div id="v-home" class="view hidden"></div>
+    <div id="v-track" class="view hidden"></div>
+    <div id="v-orders" class="view hidden"></div>
+    <div id="v-profile" class="view hidden"></div>
+    <div id="v-available" class="view hidden"></div>
+    <div id="v-myruns" class="view hidden"></div>
+    <div id="v-earnings" class="view hidden"></div>
+    <div id="v-dprofile" class="view hidden"></div>
+    <div id="v-adash" class="view hidden"></div>
+    <div id="v-aorders" class="view hidden"></div>
+    <div id="v-adrivers" class="view hidden"></div>
+    <div id="v-ausers" class="view hidden"></div>
+  </div>
+  <div class="bottom-nav" id="bnav"></div>
+</div>
+<!-- MODAL -->
+<div id="modal-bg" class="hidden" onclick="closeModalBg(event)">
+  <div class="modal-box"><div class="modal-handle"></div><div id="mc"></div></div>
+</div>
+<!-- SCRIPTS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
