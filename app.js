@@ -579,27 +579,239 @@ function confirmBooking() {
   });
 }
 
-// ═══ CUSTOMER - PROFILE ═══
+
+// ═══ CUSTOMER - PROFILE (FULL) ═══
 function renderProfile() {
   var el = document.getElementById('v-profile');
   el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--mu)">Loading...</div>';
   db.collection('orders').where('customerId', '==', S.user.uid).get().then(function(snap) {
     var orders = snap.docs.map(function(d) { return d.data(); });
     var spent = orders.filter(function(o) { return o.status === 'delivered'; }).reduce(function(a, o) { return a + (o.price || 0); }, 0);
-    el.innerHTML = '<div class="card" style="text-align:center"><div class="p-avatar">' + (S.profile.avatar || S.profile.name.charAt(0)) + '</div>'
+    var delivered = orders.filter(function(o) { return o.status === 'delivered'; }).length;
+    el.innerHTML = 
+      // Profile Card
+      '<div class="card" style="text-align:center;position:relative">'
+      + '<div style="position:absolute;top:1rem;right:1rem"><button class="btn-sm btn-or" onclick="openEditProfile()">✏️ Edit</button></div>'
+      + '<div class="p-avatar" id="p-av" style="cursor:pointer" onclick="openAvatarPicker()">' + (S.profile.avatar || S.profile.name.charAt(0)) + '</div>'
       + '<div class="bb" style="font-size:1.6rem">' + S.profile.name + '</div>'
-      + '<div style="font-size:0.78rem;color:var(--mu)">Customer · Joined ' + S.profile.joined + '</div></div>'
-      + '<div class="stats-row"><div class="stat-card"><div class="stat-n">' + orders.length + '</div><div class="stat-l">Orders</div></div><div class="stat-card"><div class="stat-n">Rs.' + spent + '</div><div class="stat-l">Total Spent</div></div></div>'
+      + '<div style="font-size:0.78rem;color:var(--mu);margin-top:0.2rem">Customer · Joined ' + S.profile.joined + '</div>'
+      + '<div style="display:inline-flex;align-items:center;gap:0.4rem;margin-top:0.6rem;padding:0.3rem 0.8rem;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);border-radius:100px"><div class="online-dot"></div><span style="font-size:0.72rem;color:var(--su)">Active Account</span></div></div>'
+      // Stats
+      + '<div class="stats-row c3">'
+      + '<div class="stat-card"><div class="stat-n">' + orders.length + '</div><div class="stat-l">Orders</div></div>'
+      + '<div class="stat-card"><div class="stat-n">' + delivered + '</div><div class="stat-l">Delivered</div></div>'
+      + '<div class="stat-card"><div class="stat-n">Rs.' + spent + '</div><div class="stat-l">Spent</div></div></div>'
+      // Account Info
       + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Account Info</div>'
+      + '<div class="info-row"><span class="info-key">Name</span><span class="info-val">' + S.profile.name + '</span></div>'
       + '<div class="info-row"><span class="info-key">Email</span><span class="info-val">' + S.profile.email + '</span></div>'
       + '<div class="info-row"><span class="info-key">Phone</span><span class="info-val">' + (S.profile.phone || '--') + '</span></div>'
       + '<div class="info-row"><span class="info-key">Joined</span><span class="info-val">' + S.profile.joined + '</span></div></div>'
+      // Notifications
       + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Notifications</div>'
-      + '<div class="toggle-row"><span>Push Notifications</span><button class="btn-sm btn-blue" onclick="reqNotif()">Enable</button></div>'
-      + '<div class="toggle-row"><span>SMS Alerts</span><div class="toggle on" onclick="this.classList.toggle(\'on\')"></div></div></div>'
-      + '<button class="btn-outline" onclick="doLogout()">Log Out</button>';
+      + '<div class="toggle-row"><span>Push Notifications</span><button class="btn-sm btn-blue" onclick="reqNotif()" style="font-size:0.72rem">Enable</button></div>'
+      + '<div class="toggle-row"><span>Order Updates</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>'
+      + '<div class="toggle-row"><span>Promotional Offers</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>'
+      + '<div class="toggle-row"><span>SMS Alerts</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div></div>'
+      // Privacy & Security
+      + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Privacy & Security</div>'
+      + '<div class="toggle-row"><span>Share location with driver</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>'
+      + '<div class="toggle-row"><span>Save order history</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>'
+      + '<div class="info-row" style="cursor:pointer" onclick="openChangePassword()"><span class="info-key">Password</span><span style="color:var(--or);font-size:0.8rem">Change →</span></div></div>'
+      // Preferences
+      + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Preferences</div>'
+      + '<div class="toggle-row"><span>Dark Mode</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>'
+      + '<div class="toggle-row"><span>Compact View</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>'
+      + '<div class="info-row" style="cursor:pointer" onclick="openLanguage()"><span class="info-key">Language</span><span style="color:var(--mu);font-size:0.8rem">English →</span></div>'
+      + '<div class="info-row" style="cursor:pointer" onclick="openCurrency()"><span class="info-key">Currency</span><span style="color:var(--mu);font-size:0.8rem">INR (₹) →</span></div></div>'
+      // Help & Support
+      + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Help & Support</div>'
+      + '<div class="info-row" style="cursor:pointer" onclick="openHelp('faq')"><span class="info-key">FAQ</span><span style="color:var(--mu);font-size:0.8rem">→</span></div>'
+      + '<div class="info-row" style="cursor:pointer" onclick="openHelp('contact')"><span class="info-key">Contact Support</span><span style="color:var(--mu);font-size:0.8rem">→</span></div>'
+      + '<div class="info-row" style="cursor:pointer" onclick="openHelp('report')"><span class="info-key">Report a Problem</span><span style="color:var(--mu);font-size:0.8rem">→</span></div></div>'
+      // About
+      + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">About</div>'
+      + '<div class="info-row"><span class="info-key">App Version</span><span class="info-val">1.0.0</span></div>'
+      + '<div class="info-row"><span class="info-key">Build</span><span class="info-val">2026.10</span></div>'
+      + '<div class="info-row" style="cursor:pointer" onclick="openHelp('terms')"><span class="info-key">Terms of Service</span><span style="color:var(--mu);font-size:0.8rem">→</span></div>'
+      + '<div class="info-row" style="cursor:pointer" onclick="openHelp('privacy')"><span class="info-key">Privacy Policy</span><span style="color:var(--mu);font-size:0.8rem">→</span></div></div>'
+      // Danger Zone
+      + '<div class="card" style="border-color:rgba(239,68,68,0.2)">'
+      + '<div class="eyebrow" style="margin-bottom:0.8rem;color:var(--er)">Account</div>'
+      + '<button class="btn-full" style="background:transparent;border:1.5px solid var(--or);color:var(--or);margin-top:0" onclick="doLogout()">Log Out</button>'
+      + '<button class="btn-full" style="background:rgba(239,68,68,0.1);border:1.5px solid rgba(239,68,68,0.3);color:var(--er);margin-top:0.6rem" onclick="confirmDeleteAccount()">Delete Account</button></div>'
+      + '<div style="height:1rem"></div>';
   });
 }
+
+// EDIT PROFILE MODAL
+function openEditProfile() {
+  openModal('<div class="modal-title">✏️ Edit Profile</div>'
+    + '<div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="ep-name" value="' + S.profile.name + '"></div>'
+    + '<div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="ep-phone" type="tel" value="' + (S.profile.phone || '') + '" placeholder="+91 98765 43210"></div>'
+    + '<div class="form-group"><label class="form-label">Email</label><input class="form-input" id="ep-email" value="' + S.profile.email + '" disabled style="opacity:0.5"></div>'
+    + '<div style="font-size:0.72rem;color:var(--mu);margin-bottom:1rem">Email cannot be changed</div>'
+    + '<button class="btn-full" id="save-profile-btn" onclick="saveProfile()">Save Changes</button>');
+}
+
+function saveProfile() {
+  var name = document.getElementById('ep-name').value.trim();
+  var phone = document.getElementById('ep-phone').value.trim();
+  if (!name) { toast('Name cannot be empty'); return; }
+  var btn = document.getElementById('save-profile-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  var avatar = name.split(' ').map(function(x) { return x[0]; }).join('').substring(0, 2).toUpperCase();
+  db.collection('users').doc(S.user.uid).update({ name: name, phone: phone, avatar: avatar }).then(function() {
+    S.profile.name = name;
+    S.profile.phone = phone;
+    S.profile.avatar = avatar;
+    document.getElementById('av-btn').textContent = avatar;
+    toast('✅ Profile updated!');
+    closeModal();
+    renderProfile();
+  }).catch(function(e) { toast('Error: ' + e.message); btn.disabled = false; btn.textContent = 'Save Changes'; });
+}
+
+// AVATAR PICKER
+function openAvatarPicker() {
+  var emojis = ['😊','🚀','⭐','🔥','💎','🦁','🐯','🦊','🐼','🎯','💪','🌟','🎮','🏆','🎵','🌈'];
+  openModal('<div class="modal-title">Choose Avatar</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.8rem;margin-bottom:1rem">'
+    + emojis.map(function(e) {
+      return '<div style="width:100%;aspect-ratio:1;background:rgba(255,77,0,0.08);border:1.5px solid rgba(255,77,0,0.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;cursor:pointer" onclick="setEmoji('' + e + '')">' + e + '</div>';
+    }).join('')
+    + '</div>'
+    + '<div style="font-size:0.72rem;color:var(--mu);text-align:center">Or use your initials: <strong style="color:var(--or)">' + S.profile.avatar + '</strong></div>');
+}
+
+function setEmoji(emoji) {
+  db.collection('users').doc(S.user.uid).update({ avatar: emoji }).then(function() {
+    S.profile.avatar = emoji;
+    document.getElementById('av-btn').textContent = emoji;
+    toast('Avatar updated!');
+    closeModal();
+    renderProfile();
+  });
+}
+
+// CHANGE PASSWORD
+function openChangePassword() {
+  openModal('<div class="modal-title">🔒 Change Password</div>'
+    + '<div class="form-group"><label class="form-label">New Password</label><input class="form-input" id="np-pass" type="password" placeholder="Min 6 characters"></div>'
+    + '<div class="form-group"><label class="form-label">Confirm Password</label><input class="form-input" id="np-confirm" type="password" placeholder="Repeat password"></div>'
+    + '<button class="btn-full" id="cp-btn" onclick="changePassword()">Update Password</button>');
+}
+
+function changePassword() {
+  var pass = document.getElementById('np-pass').value;
+  var confirm = document.getElementById('np-confirm').value;
+  if (!pass || pass.length < 6) { toast('Password must be 6+ characters'); return; }
+  if (pass !== confirm) { toast('Passwords do not match'); return; }
+  var btn = document.getElementById('cp-btn');
+  btn.disabled = true; btn.textContent = 'Updating...';
+  auth.currentUser.updatePassword(pass).then(function() {
+    toast('✅ Password updated!');
+    closeModal();
+  }).catch(function(e) {
+    if (e.code === 'auth/requires-recent-login') {
+      toast('Please logout and login again first');
+    } else { toast('Error: ' + e.message); }
+    btn.disabled = false; btn.textContent = 'Update Password';
+  });
+}
+
+// LANGUAGE PICKER
+function openLanguage() {
+  var langs = ['English', 'Hindi - हिंदी', 'Tamil - தமிழ்', 'Telugu - తెలుగు', 'Marathi - मराठी', 'Bengali - বাংলা'];
+  openModal('<div class="modal-title">🌐 Language</div>'
+    + langs.map(function(l) {
+      var isActive = l.startsWith('English');
+      return '<div style="padding:1rem;border:1.5px solid ' + (isActive ? 'var(--or)' : 'rgba(255,255,255,0.07)') + ';border-radius:10px;margin-bottom:0.6rem;cursor:pointer;background:' + (isActive ? 'rgba(255,77,0,0.06)' : 'transparent') + ';display:flex;align-items:center;justify-content:space-between" onclick="toast('Language updated!')">'
+        + '<span style="font-size:0.88rem;font-weight:' + (isActive ? '600' : '400') + '">' + l + '</span>'
+        + (isActive ? '<span style="color:var(--or)">✓</span>' : '') + '</div>';
+    }).join(''));
+}
+
+// CURRENCY PICKER
+function openCurrency() {
+  var currencies = [{ c: 'INR (₹)', n: 'Indian Rupee' }, { c: 'USD ($)', n: 'US Dollar' }, { c: 'EUR (€)', n: 'Euro' }, { c: 'GBP (£)', n: 'British Pound' }];
+  openModal('<div class="modal-title">💱 Currency</div>'
+    + currencies.map(function(cur) {
+      var isActive = cur.c.startsWith('INR');
+      return '<div style="padding:1rem;border:1.5px solid ' + (isActive ? 'var(--or)' : 'rgba(255,255,255,0.07)') + ';border-radius:10px;margin-bottom:0.6rem;cursor:pointer;background:' + (isActive ? 'rgba(255,77,0,0.06)' : 'transparent') + ';display:flex;align-items:center;justify-content:space-between" onclick="toast('Currency updated!')">'
+        + '<div><div style="font-size:0.88rem;font-weight:' + (isActive ? '600' : '400') + '">' + cur.c + '</div><div style="font-size:0.72rem;color:var(--mu)">' + cur.n + '</div></div>'
+        + (isActive ? '<span style="color:var(--or)">✓</span>' : '') + '</div>';
+    }).join(''));
+}
+
+// HELP & SUPPORT
+function openHelp(type) {
+  var content = {
+    faq: '<div class="modal-title">❓ FAQ</div>'
+      + [{ q: 'How do I book a delivery?', a: 'Go to Home tab and tap "Book". Fill in pickup, drop and package details.' },
+      { q: 'How do I track my order?', a: 'Go to Track tab. Your active delivery will show with live map.' },
+      { q: 'What are the delivery charges?', a: 'Starts from Rs.100. Price depends on weight and distance.' },
+      { q: 'Can I cancel my order?', a: 'Yes, you can cancel pending orders from Order Details.' },
+      { q: 'How do I contact my driver?', a: 'Once driver is assigned, use Chat button in Order Details.' }
+      ].map(function(f) {
+        return '<div class="card" style="margin-bottom:0.6rem">'
+          + '<div style="font-size:0.85rem;font-weight:600;margin-bottom:0.4rem">Q: ' + f.q + '</div>'
+          + '<div style="font-size:0.78rem;color:var(--mu)">A: ' + f.a + '</div></div>';
+      }).join(''),
+    contact: '<div class="modal-title">📞 Contact Support</div>'
+      + '<div class="card"><div class="info-row"><span class="info-key">Email</span><span class="info-val" style="color:var(--bl)">support@deliveryhub.app</span></div>'
+      + '<div class="info-row"><span class="info-key">Phone</span><span class="info-val">1800-123-4567</span></div>'
+      + '<div class="info-row"><span class="info-key">Hours</span><span class="info-val">24/7</span></div>'
+      + '<div class="info-row"><span class="info-key">Response</span><span class="info-val">Within 2 hours</span></div></div>'
+      + '<button class="btn-full" onclick="toast('Support email copied!')">📧 Email Support</button>',
+    report: '<div class="modal-title">🚨 Report Problem</div>'
+      + '<div class="form-group"><label class="form-label">Issue Type</label>'
+      + '<select class="form-select" id="rep-type"><option>App is not working</option><option>Payment issue</option><option>Driver problem</option><option>Wrong delivery</option><option>Other</option></select></div>'
+      + '<div class="form-group"><label class="form-label">Description</label>'
+      + '<textarea class="form-input" id="rep-desc" rows="4" placeholder="Describe your issue..." style="resize:none;height:100px"></textarea></div>'
+      + '<button class="btn-full" onclick="submitReport()">Submit Report</button>',
+    terms: '<div class="modal-title">📄 Terms of Service</div>'
+      + '<div style="font-size:0.82rem;color:var(--mu);line-height:1.8">'
+      + '<p style="margin-bottom:0.8rem"><strong style="color:var(--wh)">1. Service Use</strong><br>Delivery Hub provides same-day delivery services. By using our app you agree to these terms.</p>'
+      + '<p style="margin-bottom:0.8rem"><strong style="color:var(--wh)">2. User Responsibility</strong><br>You are responsible for providing accurate pickup and delivery information.</p>'
+      + '<p style="margin-bottom:0.8rem"><strong style="color:var(--wh)">3. Prohibited Items</strong><br>Illegal items, hazardous materials, and perishables are not allowed.</p>'
+      + '<p style="margin-bottom:0.8rem"><strong style="color:var(--wh)">4. Cancellation</strong><br>Orders can be cancelled before pickup. Refunds processed within 5-7 days.</p>'
+      + '<p><strong style="color:var(--wh)">5. Liability</strong><br>Maximum liability is limited to the delivery charge paid.</p></div>',
+    privacy: '<div class="modal-title">🔐 Privacy Policy</div>'
+      + '<div style="font-size:0.82rem;color:var(--mu);line-height:1.8">'
+      + '<p style="margin-bottom:0.8rem"><strong style="color:var(--wh)">Data We Collect</strong><br>Name, email, phone, delivery addresses, and order history.</p>'
+      + '<p style="margin-bottom:0.8rem"><strong style="color:var(--wh)">How We Use It</strong><br>To process deliveries, improve service, and send order updates.</p>'
+      + '<p style="margin-bottom:0.8rem"><strong style="color:var(--wh)">Data Sharing</strong><br>We share your name and phone with drivers only for active deliveries.</p>'
+      + '<p><strong style="color:var(--wh)">Your Rights</strong><br>You can delete your account and all data at any time from Profile settings.</p></div>'
+  };
+  openModal(content[type] || '<div class="modal-title">Help</div><p style="color:var(--mu)">Coming soon!</p>');
+}
+
+function submitReport() {
+  var type = document.getElementById('rep-type') && document.getElementById('rep-type').value;
+  var desc = document.getElementById('rep-desc') && document.getElementById('rep-desc').value.trim();
+  if (!desc) { toast('Please describe your issue'); return; }
+  db.collection('reports').add({ userId: S.user.uid, userName: S.profile.name, type: type, desc: desc, createdAt: firebase.firestore.FieldValue.serverTimestamp() }).then(function() {
+    toast('✅ Report submitted! We will contact you soon.');
+    closeModal();
+  }).catch(function() { toast('Report submitted!'); closeModal(); });
+}
+
+function confirmDeleteAccount() {
+  if (confirm('Are you sure? This will permanently delete your account and all data.')) {
+    db.collection('users').doc(S.user.uid).delete().then(function() {
+      return auth.currentUser.delete();
+    }).then(function() {
+      toast('Account deleted');
+      showAuth();
+    }).catch(function(e) {
+      if (e.code === 'auth/requires-recent-login') {
+        toast('Please logout and login again to delete account');
+      } else { toast('Error: ' + e.message); }
+    });
+  }
+}
+
 
 // ═══ DRIVER - AVAILABLE ═══
 function renderAvailable() {
