@@ -610,31 +610,31 @@ function renderProfile() {
       // Notifications
       + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Notifications</div>'
       + '<div class="toggle-row"><span>Push Notifications</span><button class="btn-sm btn-blue" onclick="reqNotif()" style="font-size:0.72rem">Enable</button></div>'
-      + '<div class="toggle-row"><span>Order Updates</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>'
-      + '<div class="toggle-row"><span>Promotional Offers</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>'
-      + '<div class="toggle-row"><span>SMS Alerts</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div></div>'
+      + '<div class="toggle-row"><span>Order Updates</span><div class="toggle on" onclick="this.classList.toggle(\'on\')"></div></div>'
+      + '<div class="toggle-row"><span>Promotional Offers</span><div class="toggle on" onclick="this.classList.toggle(\'on\')"></div></div>'
+      + '<div class="toggle-row"><span>SMS Alerts</span><div class="toggle" onclick="this.classList.toggle(\'on\')"></div></div></div>'
       // Privacy & Security
       + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Privacy & Security</div>'
-      + '<div class="toggle-row"><span>Share location with driver</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>'
-      + '<div class="toggle-row"><span>Save order history</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>'
+      + '<div class="toggle-row"><span>Share location with driver</span><div class="toggle on" onclick="this.classList.toggle(\'on\')"></div></div>'
+      + '<div class="toggle-row"><span>Save order history</span><div class="toggle on" onclick="this.classList.toggle(\'on\')"></div></div>'
       + '<div class="info-row" style="cursor:pointer" onclick="openChangePassword()"><span class="info-key">Password</span><span style="color:var(--or);font-size:0.8rem">Change →</span></div></div>'
       // Preferences
       + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Preferences</div>'
-      + '<div class="toggle-row"><span>Dark Mode</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>'
-      + '<div class="toggle-row"><span>Compact View</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>'
+      + '<div class="toggle-row"><span>Dark Mode</span><div class="toggle on" onclick="this.classList.toggle(\'on\')"></div></div>'
+      + '<div class="toggle-row"><span>Compact View</span><div class="toggle" onclick="this.classList.toggle(\'on\')"></div></div>'
       + '<div class="info-row" style="cursor:pointer" onclick="openLanguage()"><span class="info-key">Language</span><span style="color:var(--mu);font-size:0.8rem">English →</span></div>'
       + '<div class="info-row" style="cursor:pointer" onclick="openCurrency()"><span class="info-key">Currency</span><span style="color:var(--mu);font-size:0.8rem">INR (₹) →</span></div></div>'
       // Help & Support
       + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Help & Support</div>'
-      + '<div class="info-row" style="cursor:pointer" onclick="openHelp('faq')"><span class="info-key">FAQ</span><span style="color:var(--mu);font-size:0.8rem">→</span></div>'
-      + '<div class="info-row" style="cursor:pointer" onclick="openHelp('contact')"><span class="info-key">Contact Support</span><span style="color:var(--mu);font-size:0.8rem">→</span></div>'
-      + '<div class="info-row" style="cursor:pointer" onclick="openHelp('report')"><span class="info-key">Report a Problem</span><span style="color:var(--mu);font-size:0.8rem">→</span></div></div>'
+      + '<div class="info-row" style="cursor:pointer" onclick="openHelp(\'faq\')"><span class="info-key">FAQ</span><span style="color:var(--mu);font-size:0.8rem">→</span></div>'
+      + '<div class="info-row" style="cursor:pointer" onclick="openHelp(\'contact\')"><span class="info-key">Contact Support</span><span style="color:var(--mu);font-size:0.8rem">→</span></div>'
+      + '<div class="info-row" style="cursor:pointer" onclick="openHelp(\'report\')"><span class="info-key">Report a Problem</span><span style="color:var(--mu);font-size:0.8rem">→</span></div></div>'
       // About
       + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">About</div>'
       + '<div class="info-row"><span class="info-key">App Version</span><span class="info-val">1.0.0</span></div>'
       + '<div class="info-row"><span class="info-key">Build</span><span class="info-val">2026.10</span></div>'
-      + '<div class="info-row" style="cursor:pointer" onclick="openHelp('terms')"><span class="info-key">Terms of Service</span><span style="color:var(--mu);font-size:0.8rem">→</span></div>'
-      + '<div class="info-row" style="cursor:pointer" onclick="openHelp('privacy')"><span class="info-key">Privacy Policy</span><span style="color:var(--mu);font-size:0.8rem">→</span></div></div>'
+      + '<div class="info-row" style="cursor:pointer" onclick="openHelp(\'terms\')"><span class="info-key">Terms of Service</span><span style="color:var(--mu);font-size:0.8rem">→</span></div>'
+      + '<div class="info-row" style="cursor:pointer" onclick="openHelp(\'privacy\')"><span class="info-key">Privacy Policy</span><span style="color:var(--mu);font-size:0.8rem">→</span></div></div>'
       // Danger Zone
       + '<div class="card" style="border-color:rgba(239,68,68,0.2)">'
       + '<div class="eyebrow" style="margin-bottom:0.8rem;color:var(--er)">Account</div>'
@@ -678,7 +678,7 @@ function openAvatarPicker() {
   openModal('<div class="modal-title">Choose Avatar</div>'
     + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.8rem;margin-bottom:1rem">'
     + emojis.map(function(e) {
-      return '<div style="width:100%;aspect-ratio:1;background:rgba(255,77,0,0.08);border:1.5px solid rgba(255,77,0,0.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;cursor:pointer" onclick="setEmoji('' + e + '')">' + e + '</div>';
+      return '<div style="width:100%;aspect-ratio:1;background:rgba(255,77,0,0.08);border:1.5px solid rgba(255,77,0,0.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;cursor:pointer" onclick="setEmoji(\'' + e + '\')">' + e + '</div>';
     }).join('')
     + '</div>'
     + '<div style="font-size:0.72rem;color:var(--mu);text-align:center">Or use your initials: <strong style="color:var(--or)">' + S.profile.avatar + '</strong></div>');
@@ -726,7 +726,7 @@ function openLanguage() {
   openModal('<div class="modal-title">🌐 Language</div>'
     + langs.map(function(l) {
       var isActive = l.startsWith('English');
-      return '<div style="padding:1rem;border:1.5px solid ' + (isActive ? 'var(--or)' : 'rgba(255,255,255,0.07)') + ';border-radius:10px;margin-bottom:0.6rem;cursor:pointer;background:' + (isActive ? 'rgba(255,77,0,0.06)' : 'transparent') + ';display:flex;align-items:center;justify-content:space-between" onclick="toast('Language updated!')">'
+      return '<div style="padding:1rem;border:1.5px solid ' + (isActive ? 'var(--or)' : 'rgba(255,255,255,0.07)') + ';border-radius:10px;margin-bottom:0.6rem;cursor:pointer;background:' + (isActive ? 'rgba(255,77,0,0.06)' : 'transparent') + ';display:flex;align-items:center;justify-content:space-between" onclick="toast(\'Language updated!\')">'
         + '<span style="font-size:0.88rem;font-weight:' + (isActive ? '600' : '400') + '">' + l + '</span>'
         + (isActive ? '<span style="color:var(--or)">✓</span>' : '') + '</div>';
     }).join(''));
@@ -738,7 +738,7 @@ function openCurrency() {
   openModal('<div class="modal-title">💱 Currency</div>'
     + currencies.map(function(cur) {
       var isActive = cur.c.startsWith('INR');
-      return '<div style="padding:1rem;border:1.5px solid ' + (isActive ? 'var(--or)' : 'rgba(255,255,255,0.07)') + ';border-radius:10px;margin-bottom:0.6rem;cursor:pointer;background:' + (isActive ? 'rgba(255,77,0,0.06)' : 'transparent') + ';display:flex;align-items:center;justify-content:space-between" onclick="toast('Currency updated!')">'
+      return '<div style="padding:1rem;border:1.5px solid ' + (isActive ? 'var(--or)' : 'rgba(255,255,255,0.07)') + ';border-radius:10px;margin-bottom:0.6rem;cursor:pointer;background:' + (isActive ? 'rgba(255,77,0,0.06)' : 'transparent') + ';display:flex;align-items:center;justify-content:space-between" onclick="toast(\'Currency updated!\')">'
         + '<div><div style="font-size:0.88rem;font-weight:' + (isActive ? '600' : '400') + '">' + cur.c + '</div><div style="font-size:0.72rem;color:var(--mu)">' + cur.n + '</div></div>'
         + (isActive ? '<span style="color:var(--or)">✓</span>' : '') + '</div>';
     }).join(''));
@@ -763,7 +763,7 @@ function openHelp(type) {
       + '<div class="info-row"><span class="info-key">Phone</span><span class="info-val">1800-123-4567</span></div>'
       + '<div class="info-row"><span class="info-key">Hours</span><span class="info-val">24/7</span></div>'
       + '<div class="info-row"><span class="info-key">Response</span><span class="info-val">Within 2 hours</span></div></div>'
-      + '<button class="btn-full" onclick="toast('Support email copied!')">📧 Email Support</button>',
+      + '<button class="btn-full" onclick="toast(\'Support email copied!\')">📧 Email Support</button>',
     report: '<div class="modal-title">🚨 Report Problem</div>'
       + '<div class="form-group"><label class="form-label">Issue Type</label>'
       + '<select class="form-select" id="rep-type"><option>App is not working</option><option>Payment issue</option><option>Driver problem</option><option>Wrong delivery</option><option>Other</option></select></div>'
