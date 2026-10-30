@@ -352,6 +352,32 @@ body{background:var(--bk);color:var(--wh);font-family:'DM Sans',sans-serif;font-
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script>
+// Failsafe: if app.js breaks, show login screen + error text instead of endless loading
+window.addEventListener('error', function(e) {
+  var l = document.getElementById('loading');
+  var a = document.getElementById('auth');
+  var ap = document.getElementById('app');
+  if (l) l.classList.add('hidden');
+  if (a && ap && ap.classList.contains('hidden')) a.classList.remove('hidden');
+  if (!document.getElementById('err-banner')) {
+    var b = document.createElement('div');
+    b.id = 'err-banner';
+    b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#7f1d1d;color:#fff;font-size:12px;padding:10px 14px;z-index:99999;word-break:break-word';
+    b.textContent = 'Error: ' + (e.message || 'script failed') + (e.lineno ? ' (line ' + e.lineno + ')' : '');
+    document.body.appendChild(b);
+  }
+});
+setTimeout(function() {
+  var l = document.getElementById('loading');
+  var a = document.getElementById('auth');
+  var ap = document.getElementById('app');
+  if (l && !l.classList.contains('hidden')) {
+    l.classList.add('hidden');
+    if (a && ap && ap.classList.contains('hidden')) a.classList.remove('hidden');
+  }
+}, 4000);
+</script>
 <script src="app.js"></script>
 </body>
 </html>
