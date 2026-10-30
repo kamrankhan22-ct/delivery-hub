@@ -162,7 +162,7 @@ function buildNav() {
   var navs = {
     customer: [{ id: 'home', icon: '🏠', label: 'Home' }, { id: 'track', icon: '📍', label: 'Track' }, { id: 'orders', icon: '📦', label: 'Orders' }, { id: 'profile', icon: '👤', label: 'Profile' }],
     driver: [{ id: 'available', icon: '🔔', label: 'Available' }, { id: 'myruns', icon: '🚗', label: 'My Runs' }, { id: 'earnings', icon: '💰', label: 'Earnings' }, { id: 'dprofile', icon: '👤', label: 'Profile' }],
-    admin: [{ id: 'adash', icon: '📊', label: 'Dashboard' }, { id: 'aorders', icon: '📦', label: 'Orders' }, { id: 'adrivers', icon: '🚗', label: 'Drivers' }, { id: 'ausers', icon: '👥', label: 'Users' }]
+    admin: [{ id: 'adash', icon: '📊', label: 'Dashboard' }, { id: 'aorders', icon: '📦', label: 'Orders' }, { id: 'adrivers', icon: '🚗', label: 'Drivers' }, { id: 'ausers', icon: '👥', label: 'Users' }, { id: 'asettings', icon: '⚙️', label: 'Settings' }]
   };
   document.getElementById('bnav').innerHTML = (navs[S.profile.role] || []).map(function(n) {
     return '<button class="nav-item" id="ni-' + n.id + '" onclick="showView(\'' + n.id + '\')"><div class="nav-icon">' + n.icon + '</div><div class="nav-label">' + n.label + '</div></button>';
@@ -186,12 +186,12 @@ function showView(v) {
   if (el) { el.classList.remove('hidden'); el.scrollTop = 0; }
   var nb = document.getElementById('ni-' + v);
   if (nb) nb.classList.add('active');
-  var renders = { home: renderHome, track: renderTrack, orders: renderOrders, profile: renderProfile, available: renderAvailable, myruns: renderMyRuns, earnings: renderEarnings, dprofile: renderDProfile, adash: renderAdash, aorders: renderAorders, adrivers: renderAdrivers, ausers: renderAusers };
+  var renders = { home: renderHome, track: renderTrack, orders: renderOrders, profile: renderProfile, available: renderAvailable, myruns: renderMyRuns, earnings: renderEarnings, dprofile: renderDProfile, adash: renderAdash, aorders: renderAorders, adrivers: renderAdrivers, ausers: renderAusers, asettings: renderAsettings };
   if (renders[v]) renders[v]();
 }
 
 function goProfile() {
-  showView(S.profile.role === 'driver' ? 'dprofile' : S.profile.role === 'admin' ? 'adash' : 'profile');
+  showView(S.profile.role === 'driver' ? 'dprofile' : S.profile.role === 'admin' ? 'asettings' : 'profile');
 }
 
 // HELPERS
@@ -668,7 +668,7 @@ function saveProfile() {
     document.getElementById('av-btn').textContent = avatar;
     toast('✅ Profile updated!');
     closeModal();
-    renderProfile();
+    showView(S.view);
   }).catch(function(e) { toast('Error: ' + e.message); btn.disabled = false; btn.textContent = 'Save Changes'; });
 }
 
@@ -690,7 +690,7 @@ function setEmoji(emoji) {
     document.getElementById('av-btn').textContent = emoji;
     toast('Avatar updated!');
     closeModal();
-    renderProfile();
+    showView(S.view);
   });
 }
 
@@ -935,23 +935,123 @@ function renderEarnings() {
   });
 }
 
-// ═══ DRIVER - PROFILE ═══
+// ═══ SHARED ACCOUNT SETTINGS (driver + admin) ═══
+function tg(el) { el.classList.toggle('on'); }
+
+function setToggle(label, on) {
+  return '<div class="toggle-row"><span>' + label + '</span><div class="toggle' + (on ? ' on' : '') + '" onclick="tg(this)"></div></div>';
+}
+
+function setLink(label, value, call) {
+  return '<div class="info-row" style="cursor:pointer" onclick="' + call + '"><span class="info-key">' + label + '</span><span style="color:var(--mu);font-size:0.8rem">' + value + '</span></div>';
+}
+
+function setInfo(label, value) {
+  return '<div class="info-row"><span class="info-key">' + label + '</span><span class="info-val">' + value + '</span></div>';
+}
+
+function roleLabel(role) {
+  return { customer: 'Customer', driver: 'Driver', admin: 'Administrator' }[role] || role;
+}
+
+function profileHeader(me, extraHtml) {
+  return '<div class="card" style="text-align:center;position:relative">'
+    + '<div style="position:absolute;top:1rem;right:1rem"><button class="btn-sm btn-or" onclick="openEditProfile()">✏️ Edit</button></div>'
+    + '<div class="p-avatar" style="cursor:pointer" onclick="openAvatarPicker()">' + (me.avatar || me.name.charAt(0)) + '</div>'
+    + '<div class="bb" style="font-size:1.6rem">' + me.name + '</div>'
+    + '<div style="font-size:0.78rem;color:var(--mu);margin-top:0.2rem">' + roleLabel(me.role) + ' · Joined ' + (me.joined || '--') + '</div>'
+    + (extraHtml || '') + '</div>';
+}
+
+function settingsSections(role) {
+  var me = S.profile;
+  var isDriver = role === 'driver';
+  return '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Account Info</div>'
+    + setInfo('Name', me.name)
+    + setInfo('Email', me.email)
+    + setInfo('Phone', me.phone || '--')
+    + setInfo('Role', roleLabel(role))
+    + setInfo('Joined', me.joined || '--') + '</div>'
+    + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Notifications</div>'
+    + '<div class="toggle-row"><span>Push Notifications</span><button class="btn-sm btn-blue" onclick="reqNotif()">Enable</button></div>'
+    + setToggle('Order Updates', true)
+    + setToggle('SMS Alerts', false) + '</div>'
+    + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Privacy &amp; Security</div>'
+    + (isDriver ? setToggle('Share live location with customers', true) : '')
+    + setLink('Password', 'Change →', "openChangePassword()") + '</div>'
+    + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Preferences</div>'
+    + setToggle('Dark Mode', true)
+    + setLink('Language', 'English →', "openLanguage()")
+    + setLink('Currency', 'INR (₹) →', "openCurrency()") + '</div>'
+    + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Help &amp; Support</div>'
+    + setLink('FAQ', '→', "openRoleFaq()")
+    + setLink('Contact Support', '→', "openHelp('contact')")
+    + setLink('Report a Problem', '→', "openHelp('report')") + '</div>'
+    + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">About</div>'
+    + setInfo('App Version', '1.0.0')
+    + setInfo('Build', '2026.10')
+    + setLink('Terms of Service', '→', "openHelp('terms')")
+    + setLink('Privacy Policy', '→', "openHelp('privacy')") + '</div>'
+    + '<div class="card" style="border-color:rgba(239,68,68,0.2)">'
+    + '<div class="eyebrow" style="margin-bottom:0.8rem;color:var(--er)">Account</div>'
+    + '<button class="btn-full" style="background:transparent;border:1.5px solid var(--or);color:var(--or);margin-top:0" onclick="doLogout()">Log Out</button>'
+    + '<button class="btn-full" style="background:rgba(239,68,68,0.1);border:1.5px solid rgba(239,68,68,0.3);color:var(--er);margin-top:0.6rem" onclick="confirmDeleteAccount()">Delete Account</button></div>'
+    + '<div style="height:1rem"></div>';
+}
+
+function openRoleFaq() {
+  var faqs = {
+    driver: [
+      { q: 'How do I get orders?', a: 'Turn on Online in the Available tab. Pending orders show there. Tap Accept to take one.' },
+      { q: 'How do I update delivery status?', a: 'Go to My Runs and tap Picked Up, then In Transit, then Delivered.' },
+      { q: 'How are earnings added?', a: 'The order price is added to your earnings when you mark an order Delivered.' },
+      { q: 'How do I contact the customer?', a: 'Open My Runs and tap Chat on an active delivery.' },
+      { q: 'What happens if I decline?', a: 'Declined orders stay available for other drivers.' }
+    ],
+    admin: [
+      { q: 'How do I assign a driver?', a: 'Open Orders, tap a pending order, choose a driver and tap Assign Driver.' },
+      { q: 'How do I complete or cancel an order?', a: 'Open the order in Orders and use Mark Delivered or Cancel.' },
+      { q: 'Where do I see revenue?', a: 'The Dashboard shows total revenue from delivered orders.' },
+      { q: 'Where are drivers and customers listed?', a: 'Use the Drivers and Users tabs.' },
+      { q: 'Which promo codes exist?', a: 'FIRST20, SAVE50, SPEED10 and NEW100 are created automatically and apply at checkout.' }
+    ]
+  };
+  var list = faqs[S.profile.role] || faqs.admin;
+  openModal('<div class="modal-title">❓ FAQ</div>' + list.map(function(f) {
+    return '<div class="card" style="margin-bottom:0.6rem"><div style="font-size:0.85rem;font-weight:600;margin-bottom:0.4rem">Q: ' + f.q + '</div><div style="font-size:0.78rem;color:var(--mu)">A: ' + f.a + '</div></div>';
+  }).join(''));
+}
+
+// ═══ DRIVER - PROFILE (with account settings) ═══
 function renderDProfile() {
   var el = document.getElementById('v-dprofile');
+  el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--mu)">Loading...</div>';
   db.collection('users').doc(S.user.uid).get().then(function(doc) {
     var me = Object.assign({}, S.profile, doc.data());
-    el.innerHTML = '<div class="card" style="text-align:center"><div class="p-avatar">' + (me.avatar || me.name.charAt(0)) + '</div>'
-      + '<div class="bb" style="font-size:1.6rem">' + me.name + '</div>'
-      + '<div style="font-size:0.78rem;color:var(--mu)">Driver · ⭐ ' + (me.rating || 5.0) + '</div>'
-      + '<div style="margin-top:0.5rem;display:flex;align-items:center;justify-content:center;gap:0.5rem"><div class="' + (me.online ? 'online' : 'offline') + '-dot"></div><span style="font-size:0.74rem;color:var(--mu)">' + (me.online ? 'Online' : 'Offline') + '</span></div></div>'
-      + '<div class="stats-row c3"><div class="stat-card"><div class="stat-n" style="font-size:1.5rem">' + (me.deliveries || 0) + '</div><div class="stat-l">Trips</div></div>'
+    var statusLine = '<div style="margin-top:0.5rem;display:flex;align-items:center;justify-content:center;gap:0.5rem"><div class="' + (me.online ? 'online' : 'offline') + '-dot"></div><span style="font-size:0.74rem;color:var(--mu)">⭐ ' + (me.rating || 5.0) + ' · ' + (me.online ? 'Online' : 'Offline') + '</span></div>';
+    el.innerHTML = profileHeader(me, statusLine)
+      + '<div class="stats-row c3">'
+      + '<div class="stat-card"><div class="stat-n" style="font-size:1.5rem">' + (me.deliveries || 0) + '</div><div class="stat-l">Trips</div></div>'
       + '<div class="stat-card"><div class="stat-n" style="font-size:1.5rem">' + (me.rating || 5.0) + '</div><div class="stat-l">Rating</div></div>'
       + '<div class="stat-card"><div class="stat-n" style="font-size:1.5rem">Rs.' + (me.earnings || 0) + '</div><div class="stat-l">Earned</div></div></div>'
-      + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Account Info</div>'
-      + '<div class="info-row"><span class="info-key">Email</span><span class="info-val">' + me.email + '</span></div>'
-      + '<div class="info-row"><span class="info-key">Phone</span><span class="info-val">' + (me.phone || '--') + '</span></div>'
-      + '<div class="info-row"><span class="info-key">Joined</span><span class="info-val">' + me.joined + '</span></div></div>'
-      + '<button class="btn-outline" onclick="doLogout()">Log Out</button>';
+      + settingsSections('driver');
+  });
+}
+
+// ═══ ADMIN - SETTINGS ═══
+function renderAsettings() {
+  var el = document.getElementById('v-asettings');
+  el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--mu)">Loading...</div>';
+  Promise.all([db.collection('orders').get(), db.collection('users').get()]).then(function(results) {
+    var orders = results[0].docs.map(function(d) { return d.data(); });
+    var users = results[1].docs.map(function(d) { return d.data(); });
+    var badge = '<div style="display:inline-flex;align-items:center;margin-top:0.6rem;padding:0.3rem 0.8rem;background:rgba(255,77,0,0.1);border:1px solid rgba(255,77,0,0.25);border-radius:100px"><span style="font-size:0.72rem;color:var(--or)">🛡️ Full Access</span></div>';
+    el.innerHTML = profileHeader(S.profile, badge)
+      + '<div class="stats-row c3">'
+      + '<div class="stat-card"><div class="stat-n">' + orders.length + '</div><div class="stat-l">Orders</div></div>'
+      + '<div class="stat-card"><div class="stat-n">' + users.filter(function(u) { return u.role === 'driver'; }).length + '</div><div class="stat-l">Drivers</div></div>'
+      + '<div class="stat-card"><div class="stat-n">' + users.filter(function(u) { return u.role === 'customer'; }).length + '</div><div class="stat-l">Customers</div></div></div>'
+      + settingsSections('admin');
   });
 }
 
