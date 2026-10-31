@@ -145,7 +145,6 @@ function showApp() {
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('av-btn').textContent = S.profile.avatar || S.profile.name.charAt(0);
   buildNav();
-  seedDemoUsers();
   seedPromoCodes();
   var first = { customer: 'home', driver: 'available', admin: 'adash' }[S.profile.role] || 'home';
   showView(first);
@@ -159,20 +158,6 @@ function showAuth() {
   var ps = document.getElementById('profile-setup');
   if (lb) lb.classList.remove('hidden');
   if (ps) ps.classList.add('hidden');
-}
-
-// SEED DEMO USERS (background, silent)
-function seedDemoUsers() {
-  var demos = [
-    { email: 'customer@demo.com', pass: 'demo123', data: { name: 'Demo Customer', role: 'customer', avatar: 'DC', phone: '+91 98765 43210', joined: 'Jan 2026' } },
-    { email: 'driver@demo.com', pass: 'demo123', data: { name: 'Marcus Driver', role: 'driver', avatar: 'MD', phone: '+91 87654 32109', joined: 'Dec 2025', online: true, rating: 4.9, deliveries: 128, earnings: 24500 } },
-    { email: 'admin@demo.com', pass: 'admin123', data: { name: 'Admin User', role: 'admin', avatar: 'AU', phone: '+91 99999 00000', joined: 'Jan 2025' } }
-  ];
-  demos.forEach(function(d) {
-    auth.createUserWithEmailAndPassword(d.email, d.pass).then(function(cred) {
-      return db.collection('users').doc(cred.user.uid).set(Object.assign({}, d.data, { createdAt: firebase.firestore.FieldValue.serverTimestamp() }));
-    }).catch(function() {});
-  });
 }
 
 // SEED PROMO CODES
@@ -224,6 +209,7 @@ function doSignup() {
   var role = document.getElementById('s-role').value;
   if (!name || !email || !pass) { showErr('Please fill all fields.'); return; }
   if (pass.length < 6) { showErr('Password must be 6+ characters.'); return; }
+  if (role !== 'customer' && role !== 'driver') role = 'customer';
   var btn = document.getElementById('signup-btn');
   btn.disabled = true; btn.textContent = 'Creating...';
   S.signingUp = true;
