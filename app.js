@@ -40,21 +40,105 @@ auth.onAuthStateChanged(function(user) {
   document.getElementById('loading').classList.add('hidden');
   if (user) {
     S.user = user;
-    db.collection('users').doc(user.uid).get().then(function(doc) {
-      if (doc.exists) {
-        S.profile = Object.assign({ id: doc.id }, doc.data());
-        showApp();
-      } else {
-        auth.signOut();
-        showAuth();
-      }
-    }).catch(function() { showAuth(); });
+    loadProfile(user);
   } else {
     S.user = null;
     S.profile = null;
     showAuth();
   }
 });
+
+function loadProfile(user) {
+  return db.collection('users').doc(user.uid).get().then(function(doc) {
+    if (doc.exists) {
+      S.profile = Object.assign({ id: doc.id }, doc.data());
+      showApp();
+      return;
+    }
+    var viaGoogle = (user.providerData || []).some(function(p) { return p.providerId === 'google.com'; });
+    if (viaGoogle) { showProfileSetup(user); return; }
+    if (S.signingUp) return; // email signup is still saving the profile
+    auth.signOut();
+    showAuth();
+  }).catch(function() { showAuth(); });
+}
+
+// GOOGLE SIGN-IN
+function googleSignIn() {
+  var btn = document.getElementById('google-btn');
+  var provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  if (btn) btn.disabled = true;
+  auth.signInWithPopup(provider).then(function() {
+    if (btn) btn.disabled = false;
+  }).catch(function(e) {
+    if (btn) btn.disabled = false;
+    if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return;
+    if (e.code === 'auth/popup-blocked') { auth.signInWithRedirect(provider); return; }
+    showErr(googleErrMsg(e));
+  });
+}
+
+function googleErrMsg(e) {
+  var msgs = {
+    'auth/unauthorized-domain': 'This website is not allowed for Google sign-in yet. Add it in Firebase > Authentication > Settings > Authorized domains.',
+    'auth/operation-not-allowed': 'Google sign-in is not enabled yet. Enable it in Firebase > Authentication > Sign-in method.',
+    'auth/account-exists-with-different-credential': 'An account with this email already exists. Log in with your email and password.',
+    'auth/network-request-failed': 'Network error. Check your internet and try again.'
+  };
+  return msgs[e.code] || e.message;
+}
+
+// Show errors from a redirect-based sign-in (only used if popup was blocked)
+auth.getRedirectResult().catch(function(e) { showErr(googleErrMsg(e)); });
+
+// FIRST-TIME GOOGLE USERS: choose role
+function showProfileSetup(user) {
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('auth').classList.remove('hidden');
+  document.getElementById('login-box').classList.add('hidden');
+  document.getElementById('profile-setup').classList.remove('hidden');
+  document.getElementById('ps-name').value = user.displayName || '';
+  document.getElementById('ps-email').textContent = user.email || '';
+}
+
+function psErr(m) {
+  var e = document.getElementById('ps-err');
+  e.textContent = m;
+  e.classList.remove('hidden');
+}
+
+function finishGoogleProfile() {
+  var user = auth.currentUser;
+  if (!user) { showAuth(); return; }
+  var name = document.getElementById('ps-name').value.trim();
+  var phone = document.getElementById('ps-phone').value.trim();
+  var role = document.getElementById('ps-role').value;
+  if (!name) { psErr('Please enter your name.'); return; }
+  if (role !== 'customer' && role !== 'driver') role = 'customer';
+  var btn = document.getElementById('ps-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  var avatar = name.split(' ').map(function(x) { return x[0]; }).join('').substring(0, 2).toUpperCase();
+  var data = {
+    name: name, email: user.email || '', phone: phone, role: role, avatar: avatar, provider: 'google',
+    joined: new Date().toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if (role === 'driver') Object.assign(data, { online: false, rating: 5.0, deliveries: 0, earnings: 0 });
+  db.collection('users').doc(user.uid).set(data).then(function() {
+    btn.disabled = false; btn.textContent = 'Continue';
+    return loadProfile(user);
+  }).catch(function(e) {
+    psErr(e.message);
+    btn.disabled = false; btn.textContent = 'Continue';
+  });
+}
+
+function cancelGoogleProfile() {
+  auth.signOut();
+  showAuth();
+}
 
 function showApp() {
   document.getElementById('auth').classList.add('hidden');
@@ -71,6 +155,10 @@ function showAuth() {
   document.getElementById('loading').classList.add('hidden');
   document.getElementById('app').classList.add('hidden');
   document.getElementById('auth').classList.remove('hidden');
+  var lb = document.getElementById('login-box');
+  var ps = document.getElementById('profile-setup');
+  if (lb) lb.classList.remove('hidden');
+  if (ps) ps.classList.add('hidden');
 }
 
 // SEED DEMO USERS (background, silent)
@@ -138,12 +226,17 @@ function doSignup() {
   if (pass.length < 6) { showErr('Password must be 6+ characters.'); return; }
   var btn = document.getElementById('signup-btn');
   btn.disabled = true; btn.textContent = 'Creating...';
+  S.signingUp = true;
   auth.createUserWithEmailAndPassword(email, pass).then(function(cred) {
     var avatar = name.split(' ').map(function(x) { return x[0]; }).join('').substring(0, 2).toUpperCase();
     var data = { name: name, email: email, phone: phone, role: role, avatar: avatar, joined: new Date().toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }), createdAt: firebase.firestore.FieldValue.serverTimestamp() };
     if (role === 'driver') Object.assign(data, { online: false, rating: 5.0, deliveries: 0, earnings: 0 });
-    return db.collection('users').doc(cred.user.uid).set(data);
+    return db.collection('users').doc(cred.user.uid).set(data).then(function() {
+      S.signingUp = false;
+      return loadProfile(cred.user);
+    });
   }).catch(function(e) {
+    S.signingUp = false;
     var msgs = { 'auth/email-already-in-use': 'Email already registered.', 'auth/weak-password': 'Password too weak.' };
     showErr(msgs[e.code] || e.message);
     btn.disabled = false; btn.textContent = 'Create Account';
