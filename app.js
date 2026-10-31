@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════
+ // ═══════════════════════════════════════
 // DELIVERY HUB - app.js
 // Firebase + All App Logic
 // ═══════════════════════════════════════
@@ -267,6 +267,12 @@ function showView(v) {
   if (nb) nb.classList.add('active');
   var renders = { home: renderHome, track: renderTrack, orders: renderOrders, profile: renderProfile, available: renderAvailable, myruns: renderMyRuns, earnings: renderEarnings, dprofile: renderDProfile, adash: renderAdash, aorders: renderAorders, adrivers: renderAdrivers, ausers: renderAusers, asettings: renderAsettings };
   if (renders[v]) renders[v]();
+}
+
+function goHome() {
+  if (!S.profile) return;
+  closeModal();
+  showView({ customer: 'home', driver: 'available', admin: 'adash' }[S.profile.role] || 'home');
 }
 
 function goProfile() {
