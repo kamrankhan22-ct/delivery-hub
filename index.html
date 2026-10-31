@@ -279,6 +279,10 @@ body{background:var(--bk);color:var(--wh);font-family:'DM Sans',sans-serif;font-
 .btn-google:hover{opacity:0.92}
 .btn-google:active{transform:scale(0.98)}
 .btn-google:disabled{opacity:0.6;cursor:not-allowed}
+
+/* Tap logo to go home */
+.topbar-logo{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;transition:opacity 0.15s}
+.topbar-logo:active{opacity:0.6}
 </style>
 </head>
 <body>
@@ -341,7 +345,7 @@ body{background:var(--bk);color:var(--wh);font-family:'DM Sans',sans-serif;font-
 <!-- APP -->
 <div id="app" class="hidden">
   <div class="topbar">
-    <div class="topbar-logo"><div style="width:8px;height:8px;border-radius:50%;background:var(--or);animation:blink 1.5s infinite;margin-right:0.2rem"></div>DELIVERY HUB</div>
+    <div class="topbar-logo" onclick="goHome()" title="Home"><div style="width:8px;height:8px;border-radius:50%;background:var(--or);animation:blink 1.5s infinite;margin-right:0.2rem"></div>DELIVERY HUB</div>
     <div class="top-right">
       <button class="notif-btn" onclick="showNotifs()">🔔<div class="notif-badge" id="nb">3</div></button>
       <button class="av-btn" id="av-btn" onclick="goProfile()">U</button>
