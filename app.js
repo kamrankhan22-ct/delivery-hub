@@ -1,4 +1,4 @@
- // ═══════════════════════════════════════
+// ═══════════════════════════════════════
 // DELIVERY HUB - app.js
 // Firebase + All App Logic
 // ═══════════════════════════════════════
@@ -269,6 +269,38 @@ function showView(v) {
   if (renders[v]) renders[v]();
 }
 
+// ═══ ACCENT COLOR PICKER ═══
+function themeRow() {
+  var t = DH_THEMES[getAccentKey()];
+  return '<div class="info-row" style="cursor:pointer" onclick="openThemePicker()"><span class="info-key">Accent Color</span>'
+    + '<span style="display:flex;align-items:center;gap:0.5rem;color:var(--mu);font-size:0.8rem">'
+    + '<span style="width:14px;height:14px;border-radius:50%;display:inline-block;background:' + t.main + '"></span>' + t.name + ' →</span></div>';
+}
+
+function openThemePicker() {
+  var cur = getAccentKey();
+  openModal('<div class="modal-title">🎨 Accent Color</div>'
+    + '<div style="font-size:0.78rem;color:var(--mu);margin-bottom:1rem">Choose the color used for buttons, highlights and glows across the app.</div>'
+    + '<div class="swatch-grid">'
+    + Object.keys(DH_THEMES).map(function(k) {
+      var t = DH_THEMES[k];
+      return '<div class="swatch' + (k === cur ? ' sel' : '') + '" onclick="setAccent(\'' + k + '\')">'
+        + '<div class="swatch-dot" style="background:linear-gradient(135deg,' + t.main + ',' + t.dark + ')"></div>'
+        + '<div class="swatch-name">' + t.name + (k === cur ? ' ✓' : '') + '</div></div>';
+    }).join('')
+    + '</div>');
+}
+
+function setAccent(key) {
+  applyAccent(key);
+  toast('🎨 ' + DH_THEMES[key].name + ' theme applied');
+  openThemePicker();
+}
+
+function accentColor() {
+  return (getComputedStyle(document.documentElement).getPropertyValue('--or') || '').trim() || '#FF4D00';
+}
+
 function goHome() {
   if (!S.profile) return;
   closeModal();
@@ -319,7 +351,7 @@ function renderHome() {
     + '<div class="promo-banner"><div style="font-size:1.8rem">🎉</div><div><div style="font-size:0.82rem;font-weight:700;color:var(--ye)">First order 20% OFF!</div><div style="font-size:0.7rem;color:var(--mu);margin-top:0.1rem">Use code <strong style="color:var(--ye)">FIRST20</strong></div></div></div>'
     + '<div class="stats-row"><div class="stat-card"><div class="stat-n" id="hs-total">0</div><div class="stat-l">Total Orders</div></div><div class="stat-card"><div class="stat-n" id="hs-done">0</div><div class="stat-l">Delivered</div></div></div>'
     + '<div class="sec-divider"><div class="sec-line"></div><div class="sec-txt">Recent Orders</div><div class="sec-line"></div></div>'
-    + '<div id="home-orders"><div style="text-align:center;padding:1.5rem;color:var(--mu)">Loading...</div></div>';
+    + '<div id="home-orders"><div class="skel-wrap"><div class="skel skel-card"></div><div class="skel skel-card"></div></div></div>';
 
   var unsub = db.collection('orders').where('customerId', '==', S.user.uid).onSnapshot(function(snap) {
     var orders = snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); }).sort(function(a, b) { return (b.createdAt && b.createdAt.seconds || 0) - (a.createdAt && a.createdAt.seconds || 0); });
@@ -327,7 +359,7 @@ function renderHome() {
     document.getElementById('hs-done').textContent = orders.filter(function(o) { return o.status === 'delivered'; }).length;
     var active = orders.find(function(o) { return ['pending', 'accepted', 'picked_up', 'in_transit'].indexOf(o.status) > -1; });
     document.getElementById('home-active').innerHTML = active
-      ? '<div class="card" style="border-color:rgba(255,77,0,0.3);background:linear-gradient(135deg,rgba(255,77,0,0.08),rgba(255,77,0,0.02));cursor:pointer;margin-bottom:1rem" onclick="showView(\'track\')">'
+      ? '<div class="card" style="border-color:rgba(var(--or-rgb),0.3);background:linear-gradient(135deg,rgba(var(--or-rgb),0.08),rgba(var(--or-rgb),0.02));cursor:pointer;margin-bottom:1rem" onclick="showView(\'track\')">'
       + '<div class="row" style="margin-bottom:0.5rem"><div style="display:flex;align-items:center;gap:0.4rem"><div class="pulse"></div><span style="font-size:0.7rem;font-weight:600;color:var(--or);text-transform:uppercase">Active Delivery</span></div><span class="badge ' + badgeCls(active.status) + '">' + fmtStatus(active.status) + '</span></div>'
       + '<div style="font-size:0.9rem;font-weight:600;margin-bottom:0.3rem">' + active.item + '</div>'
       + '<div style="font-size:0.76rem;color:var(--mu)">' + active.pickup + ' → ' + active.drop + '</div>'
@@ -342,7 +374,7 @@ function renderHome() {
 // ═══ CUSTOMER - TRACK ═══
 function renderTrack() {
   var el = document.getElementById('v-track');
-  el.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--mu)">Loading...</div>';
+  el.innerHTML = '<div class="skel-wrap"><div class="skel skel-card"></div><div class="skel skel-card"></div></div>';
   var unsub = db.collection('orders').where('customerId', '==', S.user.uid).onSnapshot(function(snap) {
     var orders = snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
     var active = orders.find(function(o) { return ['pending', 'accepted', 'picked_up', 'in_transit'].indexOf(o.status) > -1; });
@@ -354,7 +386,7 @@ function renderTrack() {
     var si = steps.indexOf(active.status);
     var labels = ['Placed', 'Assigned', 'Picked Up', 'In Transit', 'Delivered'];
     el.innerHTML = '<div class="bb-lg" style="margin-bottom:0.5rem">LIVE TRACKING</div>'
-      + '<div style="display:inline-flex;align-items:center;padding:0.25rem 0.7rem;background:rgba(255,77,0,0.1);border:1px solid rgba(255,77,0,0.25);border-radius:100px;font-size:0.7rem;color:var(--or2);margin-bottom:1rem">Order #' + (active.orderId || active.id.substring(0, 8).toUpperCase()) + '</div>'
+      + '<div style="display:inline-flex;align-items:center;padding:0.25rem 0.7rem;background:rgba(var(--or-rgb),0.1);border:1px solid rgba(var(--or-rgb),0.25);border-radius:100px;font-size:0.7rem;color:var(--or2);margin-bottom:1rem">Order #' + (active.orderId || active.id.substring(0, 8).toUpperCase()) + '</div>'
       + '<div id="live-map"></div>'
       + '<div class="card"><div class="row" style="margin-bottom:0.5rem"><span class="badge ' + badgeCls(active.status) + '">' + fmtStatus(active.status) + '</span><div class="bb" style="font-size:1.5rem;color:var(--or)">ETA ' + (active.eta || '--') + '</div></div>'
       + '<div class="progress-steps">' + steps.map(function(s, i) { return '<div class="prog-step ' + (i < si ? 'done' : i === si ? 'active' : '') + '"><div class="prog-dot">' + (i < si ? '✓' : i + 1) + '</div><div class="prog-lbl">' + labels[i] + '</div></div>'; }).join('') + '</div></div>'
@@ -380,12 +412,12 @@ function initMap(order) {
   var map = L.map('live-map', { zoomControl: true, attributionControl: false }).setView(mid, 12);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
   S.mapInst = map;
-  var fIcon = L.divIcon({ html: '<div style="background:#FF4D00;width:13px;height:13px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.5)"></div>', iconSize: [13, 13], className: '' });
+  var fIcon = L.divIcon({ html: '<div style="background:var(--or);width:13px;height:13px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.5)"></div>', iconSize: [13, 13], className: '' });
   var tIcon = L.divIcon({ html: '<div style="background:#FFD000;width:13px;height:13px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.5)"></div>', iconSize: [13, 13], className: '' });
-  var dIcon = L.divIcon({ html: '<div style="background:#0A0A0A;border:2px solid #FF4D00;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 2px 12px rgba(255,77,0,0.5)">🚗</div>', iconSize: [32, 32], iconAnchor: [16, 16], className: '' });
+  var dIcon = L.divIcon({ html: '<div style="background:#0A0A0A;border:2px solid var(--or);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 2px 12px rgba(var(--or-rgb),0.5)">🚗</div>', iconSize: [32, 32], iconAnchor: [16, 16], className: '' });
   L.marker(from, { icon: fIcon }).addTo(map);
   L.marker(to, { icon: tIcon }).addTo(map);
-  L.polyline([from, to], { color: '#FF4D00', weight: 3, dashArray: '6 4', opacity: 0.5 }).addTo(map);
+  L.polyline([from, to], { color: accentColor(), weight: 3, dashArray: '6 4', opacity: 0.5 }).addTo(map);
   var dM = L.marker(from, { icon: dIcon }).addTo(map);
   var prog = 0;
   S.trackTimer = setInterval(function() {
@@ -397,7 +429,7 @@ function initMap(order) {
 // ═══ CUSTOMER - ORDERS ═══
 function renderOrders() {
   var el = document.getElementById('v-orders');
-  el.innerHTML = '<div class="bb-lg" style="margin-bottom:1rem">MY ORDERS</div><div id="orders-list"><div style="text-align:center;padding:2rem;color:var(--mu)">Loading...</div></div>';
+  el.innerHTML = '<div class="bb-lg" style="margin-bottom:1rem">MY ORDERS</div><div id="orders-list"><div class="skel-wrap"><div class="skel skel-card"></div><div class="skel skel-card"></div></div></div>';
   var unsub = db.collection('orders').where('customerId', '==', S.user.uid).onSnapshot(function(snap) {
     var orders = snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); }).sort(function(a, b) { return (b.createdAt && b.createdAt.seconds || 0) - (a.createdAt && a.createdAt.seconds || 0); });
     document.getElementById('orders-list').innerHTML = orders.length
@@ -416,8 +448,8 @@ function openOrderDetail(id) {
     var canChat = ['accepted', 'picked_up', 'in_transit'].indexOf(o.status) > -1 && o.driverName;
     var html = '<div class="modal-title">Order #' + (o.orderId || o.id.substring(0, 8).toUpperCase()) + '</div>'
       + '<div class="row" style="margin-bottom:1rem"><span class="badge ' + badgeCls(o.status) + '">' + fmtStatus(o.status) + '</span><div class="bb" style="font-size:1.5rem;color:var(--or)">Rs.' + o.price + '</div></div>'
-      + (canChat ? '<div style="background:rgba(255,77,0,0.06);border:1px solid rgba(255,77,0,0.2);border-radius:12px;padding:1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.8rem;cursor:pointer" onclick="openChat(\'' + o.id + '\',\'' + (o.driverName || '') + '\')">'
-        + '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--or),#c43200);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">🚗</div>'
+      + (canChat ? '<div style="background:rgba(var(--or-rgb),0.06);border:1px solid rgba(var(--or-rgb),0.2);border-radius:12px;padding:1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.8rem;cursor:pointer" onclick="openChat(\'' + o.id + '\',\'' + (o.driverName || '') + '\')">'
+        + '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--or),var(--or-dark));display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">🚗</div>'
         + '<div><div style="font-weight:600">' + o.driverName + '</div><div style="font-size:0.72rem;color:var(--mu)">⭐ ' + (o.driverRating || 4.9) + ' · Tap to Chat</div></div>'
         + '<div style="margin-left:auto;background:var(--or);border-radius:8px;padding:0.4rem 0.7rem;font-size:0.72rem;font-weight:600;color:white">💬 Chat</div></div>' : '')
       + '<div class="info-row"><span class="info-key">Item</span><span class="info-val">' + o.item + '</span></div>'
@@ -520,7 +552,7 @@ function showOffersModal() {
     { code: 'NEW100', title: 'Rs.100 OFF', desc: 'Orders above Rs.500 only', color: '#8b5cf6' }
     ].map(function(p) {
       return '<div class="card" style="display:flex;align-items:center;gap:0.8rem;cursor:pointer;margin-bottom:0.6rem" onclick="copyPromo(\'' + p.code + '\')">'
-        + '<div class="bb" style="width:56px;height:56px;border-radius:12px;background:rgba(255,77,0,0.08);display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:' + p.color + ';text-align:center;line-height:1.2;flex-shrink:0">' + p.title + '</div>'
+        + '<div class="bb" style="width:56px;height:56px;border-radius:12px;background:rgba(var(--or-rgb),0.08);display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:' + p.color + ';text-align:center;line-height:1.2;flex-shrink:0">' + p.title + '</div>'
         + '<div style="flex:1"><div style="font-weight:600;font-size:0.88rem">' + p.code + '</div><div style="font-size:0.74rem;color:var(--mu);margin-top:0.15rem">' + p.desc + '</div></div>'
         + '<div style="font-size:0.72rem;color:var(--or);font-weight:600">Copy</div></div>';
     }).join('')
@@ -564,7 +596,7 @@ function renderBookingStep() {
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">'
       + '<div class="form-group"><label class="form-label">Weight</label><select class="form-select" id="b-weight" onchange="updatePrice()">' + ['< 1 kg', '1-3 kg', '3-5 kg', '5-10 kg'].map(function(w) { return '<option ' + (S.bData.weight === w ? 'selected' : '') + '>' + w + '</option>'; }).join('') + '</select></div>'
       + '<div class="form-group"><label class="form-label">Type</label><select class="form-select" id="b-type" onchange="updatePrice()">' + ['Standard', 'Express', 'Fragile'].map(function(t) { return '<option ' + (S.bData.type === t ? 'selected' : '') + '>' + t + '</option>'; }).join('') + '</select></div></div>'
-      + '<div class="card" style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,77,0,0.06);border-color:rgba(255,77,0,0.2);margin-bottom:1rem">'
+      + '<div class="card" style="display:flex;justify-content:space-between;align-items:center;background:rgba(var(--or-rgb),0.06);border-color:rgba(var(--or-rgb),0.2);margin-bottom:1rem">'
       + '<div><div style="font-size:0.72rem;color:var(--mu)">Estimated Price</div><div style="font-size:0.65rem;color:var(--mu)">Incl. 5% GST</div></div>'
       + '<div class="bb" style="font-size:2rem;color:var(--or)" id="b-price">Rs.' + (S.bData.price || 220) + '</div></div>'
       + '<div style="display:flex;gap:0.6rem"><button class="btn-outline" style="flex:1;margin-top:0" onclick="S.bStep=1;renderBookingStep()">← Back</button>'
@@ -584,7 +616,7 @@ function renderBookingStep() {
       + '<div class="promo-chips"><div class="promo-chip" onclick="chipPromo(\'FIRST20\')">FIRST20</div><div class="promo-chip" onclick="chipPromo(\'SAVE50\')">SAVE50</div><div class="promo-chip" onclick="chipPromo(\'SPEED10\')">SPEED10</div></div>'
       + '<div class="promo-inp-wrap"><input id="promo-inp" placeholder="ENTER CODE" maxlength="10"><button onclick="applyPromo()">Apply</button></div>'
       + '<div id="promo-res"></div>'
-      + '<div class="card" style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,77,0,0.06);border-color:rgba(255,77,0,0.2);margin:0.8rem 0">'
+      + '<div class="card" style="display:flex;justify-content:space-between;align-items:center;background:rgba(var(--or-rgb),0.06);border-color:rgba(var(--or-rgb),0.2);margin:0.8rem 0">'
       + '<span style="color:var(--mu)">Total to Pay</span><div class="bb" style="font-size:1.8rem;color:var(--or)" id="final-price">Rs.' + S.bData.price + '</div></div>'
       + '<div style="display:flex;gap:0.6rem"><button class="btn-outline" style="flex:1;margin-top:0" onclick="S.bStep=2;renderBookingStep()">← Back</button>'
       + '<button class="btn-full" style="flex:2;margin-top:0" id="confirm-btn" onclick="confirmBooking()">✅ Confirm and Pay →</button></div>';
@@ -668,7 +700,7 @@ function confirmBooking() {
 // ═══ CUSTOMER - PROFILE (FULL) ═══
 function renderProfile() {
   var el = document.getElementById('v-profile');
-  el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--mu)">Loading...</div>';
+  el.innerHTML = '<div class="skel-wrap"><div class="skel skel-card"></div><div class="skel skel-card"></div></div>';
   db.collection('orders').where('customerId', '==', S.user.uid).get().then(function(snap) {
     var orders = snap.docs.map(function(d) { return d.data(); });
     var spent = orders.filter(function(o) { return o.status === 'delivered'; }).reduce(function(a, o) { return a + (o.price || 0); }, 0);
@@ -706,6 +738,7 @@ function renderProfile() {
       // Preferences
       + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Preferences</div>'
       + '<div class="toggle-row"><span>Dark Mode</span><div class="toggle on" onclick="this.classList.toggle(\'on\')"></div></div>'
+      + themeRow()
       + '<div class="toggle-row"><span>Compact View</span><div class="toggle" onclick="this.classList.toggle(\'on\')"></div></div>'
       + '<div class="info-row" style="cursor:pointer" onclick="openLanguage()"><span class="info-key">Language</span><span style="color:var(--mu);font-size:0.8rem">English →</span></div>'
       + '<div class="info-row" style="cursor:pointer" onclick="openCurrency()"><span class="info-key">Currency</span><span style="color:var(--mu);font-size:0.8rem">INR (₹) →</span></div></div>'
@@ -763,7 +796,7 @@ function openAvatarPicker() {
   openModal('<div class="modal-title">Choose Avatar</div>'
     + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.8rem;margin-bottom:1rem">'
     + emojis.map(function(e) {
-      return '<div style="width:100%;aspect-ratio:1;background:rgba(255,77,0,0.08);border:1.5px solid rgba(255,77,0,0.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;cursor:pointer" onclick="setEmoji(\'' + e + '\')">' + e + '</div>';
+      return '<div style="width:100%;aspect-ratio:1;background:rgba(var(--or-rgb),0.08);border:1.5px solid rgba(var(--or-rgb),0.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;cursor:pointer" onclick="setEmoji(\'' + e + '\')">' + e + '</div>';
     }).join('')
     + '</div>'
     + '<div style="font-size:0.72rem;color:var(--mu);text-align:center">Or use your initials: <strong style="color:var(--or)">' + S.profile.avatar + '</strong></div>');
@@ -811,7 +844,7 @@ function openLanguage() {
   openModal('<div class="modal-title">🌐 Language</div>'
     + langs.map(function(l) {
       var isActive = l.startsWith('English');
-      return '<div style="padding:1rem;border:1.5px solid ' + (isActive ? 'var(--or)' : 'rgba(255,255,255,0.07)') + ';border-radius:10px;margin-bottom:0.6rem;cursor:pointer;background:' + (isActive ? 'rgba(255,77,0,0.06)' : 'transparent') + ';display:flex;align-items:center;justify-content:space-between" onclick="toast(\'Language updated!\')">'
+      return '<div style="padding:1rem;border:1.5px solid ' + (isActive ? 'var(--or)' : 'rgba(255,255,255,0.07)') + ';border-radius:10px;margin-bottom:0.6rem;cursor:pointer;background:' + (isActive ? 'rgba(var(--or-rgb),0.06)' : 'transparent') + ';display:flex;align-items:center;justify-content:space-between" onclick="toast(\'Language updated!\')">'
         + '<span style="font-size:0.88rem;font-weight:' + (isActive ? '600' : '400') + '">' + l + '</span>'
         + (isActive ? '<span style="color:var(--or)">✓</span>' : '') + '</div>';
     }).join(''));
@@ -823,7 +856,7 @@ function openCurrency() {
   openModal('<div class="modal-title">💱 Currency</div>'
     + currencies.map(function(cur) {
       var isActive = cur.c.startsWith('INR');
-      return '<div style="padding:1rem;border:1.5px solid ' + (isActive ? 'var(--or)' : 'rgba(255,255,255,0.07)') + ';border-radius:10px;margin-bottom:0.6rem;cursor:pointer;background:' + (isActive ? 'rgba(255,77,0,0.06)' : 'transparent') + ';display:flex;align-items:center;justify-content:space-between" onclick="toast(\'Currency updated!\')">'
+      return '<div style="padding:1rem;border:1.5px solid ' + (isActive ? 'var(--or)' : 'rgba(255,255,255,0.07)') + ';border-radius:10px;margin-bottom:0.6rem;cursor:pointer;background:' + (isActive ? 'rgba(var(--or-rgb),0.06)' : 'transparent') + ';display:flex;align-items:center;justify-content:space-between" onclick="toast(\'Currency updated!\')">'
         + '<div><div style="font-size:0.88rem;font-weight:' + (isActive ? '600' : '400') + '">' + cur.c + '</div><div style="font-size:0.72rem;color:var(--mu)">' + cur.n + '</div></div>'
         + (isActive ? '<span style="color:var(--or)">✓</span>' : '') + '</div>';
     }).join(''));
@@ -903,7 +936,7 @@ function renderAvailable() {
   var el = document.getElementById('v-available');
   el.innerHTML = '<div class="row" style="margin-bottom:1rem"><div class="bb-lg" style="margin-bottom:0">AVAILABLE</div><div class="row-gap"><div style="font-size:0.75rem;color:var(--mu)">Online</div><div class="toggle ' + (S.profile.online ? 'on' : '') + '" id="online-tog" onclick="toggleOnline()"></div></div></div>'
     + '<div class="stats-row"><div class="stat-card"><div class="stat-n" id="as-pending">0</div><div class="stat-l">Pending</div></div><div class="stat-card"><div class="stat-n" id="as-done">0</div><div class="stat-l">Completed</div></div></div>'
-    + '<div id="avail-list"><div style="text-align:center;padding:2rem;color:var(--mu)">Loading...</div></div>';
+    + '<div id="avail-list"><div class="skel-wrap"><div class="skel skel-card"></div><div class="skel skel-card"></div></div></div>';
 
   var u1 = db.collection('orders').where('status', '==', 'pending').onSnapshot(function(snap) {
     var orders = snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); }).sort(function(a, b) { return (b.createdAt && b.createdAt.seconds || 0) - (a.createdAt && a.createdAt.seconds || 0); });
@@ -944,7 +977,7 @@ function acceptOrder(id) {
 // ═══ DRIVER - MY RUNS ═══
 function renderMyRuns() {
   var el = document.getElementById('v-myruns');
-  el.innerHTML = '<div class="bb-lg" style="margin-bottom:1rem">MY DELIVERIES</div><div id="runs-list"><div style="text-align:center;padding:2rem;color:var(--mu)">Loading...</div></div>';
+  el.innerHTML = '<div class="bb-lg" style="margin-bottom:1rem">MY DELIVERIES</div><div id="runs-list"><div class="skel-wrap"><div class="skel skel-card"></div><div class="skel skel-card"></div></div></div>';
   var unsub = db.collection('orders').where('driverId', '==', S.user.uid).onSnapshot(function(snap) {
     var orders = snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); }).sort(function(a, b) { return (b.createdAt && b.createdAt.seconds || 0) - (a.createdAt && a.createdAt.seconds || 0); });
     var active = orders.filter(function(o) { return ['delivered', 'cancelled'].indexOf(o.status) === -1; });
@@ -1000,11 +1033,11 @@ function updateStatus(id, status, price) {
 // ═══ DRIVER - EARNINGS ═══
 function renderEarnings() {
   var el = document.getElementById('v-earnings');
-  el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--mu)">Loading...</div>';
+  el.innerHTML = '<div class="skel-wrap"><div class="skel skel-card"></div><div class="skel skel-card"></div></div>';
   db.collection('users').doc(S.user.uid).get().then(function(doc) {
     var me = Object.assign({}, S.profile, doc.data());
     el.innerHTML = '<div class="bb-lg" style="margin-bottom:1rem">EARNINGS</div>'
-      + '<div class="card" style="background:linear-gradient(135deg,rgba(255,77,0,0.15),rgba(255,77,0,0.04));border-color:rgba(255,77,0,0.3);text-align:center;padding:2rem">'
+      + '<div class="card" style="background:linear-gradient(135deg,rgba(var(--or-rgb),0.15),rgba(var(--or-rgb),0.04));border-color:rgba(var(--or-rgb),0.3);text-align:center;padding:2rem">'
       + '<div style="font-size:0.7rem;color:var(--mu);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.4rem">Total Earned</div>'
       + '<div class="bb" style="font-size:4rem;color:var(--or);line-height:1">Rs.' + (me.earnings || 0) + '</div>'
       + '<div style="font-size:0.78rem;color:var(--mu);margin-top:0.3rem">' + (me.deliveries || 0) + ' deliveries completed</div></div>'
@@ -1066,6 +1099,7 @@ function settingsSections(role) {
     + setLink('Password', 'Change →', "openChangePassword()") + '</div>'
     + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Preferences</div>'
     + setToggle('Dark Mode', true)
+    + themeRow()
     + setLink('Language', 'English →', "openLanguage()")
     + setLink('Currency', 'INR (₹) →', "openCurrency()") + '</div>'
     + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">Help &amp; Support</div>'
@@ -1110,7 +1144,7 @@ function openRoleFaq() {
 // ═══ DRIVER - PROFILE (with account settings) ═══
 function renderDProfile() {
   var el = document.getElementById('v-dprofile');
-  el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--mu)">Loading...</div>';
+  el.innerHTML = '<div class="skel-wrap"><div class="skel skel-card"></div><div class="skel skel-card"></div></div>';
   db.collection('users').doc(S.user.uid).get().then(function(doc) {
     var me = Object.assign({}, S.profile, doc.data());
     var statusLine = '<div style="margin-top:0.5rem;display:flex;align-items:center;justify-content:center;gap:0.5rem"><div class="' + (me.online ? 'online' : 'offline') + '-dot"></div><span style="font-size:0.74rem;color:var(--mu)">⭐ ' + (me.rating || 5.0) + ' · ' + (me.online ? 'Online' : 'Offline') + '</span></div>';
@@ -1126,11 +1160,11 @@ function renderDProfile() {
 // ═══ ADMIN - SETTINGS ═══
 function renderAsettings() {
   var el = document.getElementById('v-asettings');
-  el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--mu)">Loading...</div>';
+  el.innerHTML = '<div class="skel-wrap"><div class="skel skel-card"></div><div class="skel skel-card"></div></div>';
   Promise.all([db.collection('orders').get(), db.collection('users').get()]).then(function(results) {
     var orders = results[0].docs.map(function(d) { return d.data(); });
     var users = results[1].docs.map(function(d) { return d.data(); });
-    var badge = '<div style="display:inline-flex;align-items:center;margin-top:0.6rem;padding:0.3rem 0.8rem;background:rgba(255,77,0,0.1);border:1px solid rgba(255,77,0,0.25);border-radius:100px"><span style="font-size:0.72rem;color:var(--or)">🛡️ Full Access</span></div>';
+    var badge = '<div style="display:inline-flex;align-items:center;margin-top:0.6rem;padding:0.3rem 0.8rem;background:rgba(var(--or-rgb),0.1);border:1px solid rgba(var(--or-rgb),0.25);border-radius:100px"><span style="font-size:0.72rem;color:var(--or)">🛡️ Full Access</span></div>';
     el.innerHTML = profileHeader(S.profile, badge)
       + '<div class="stats-row c3">'
       + '<div class="stat-card"><div class="stat-n">' + orders.length + '</div><div class="stat-l">Orders</div></div>'
@@ -1143,7 +1177,7 @@ function renderAsettings() {
 // ═══ ADMIN - DASHBOARD ═══
 function renderAdash() {
   var el = document.getElementById('v-adash');
-  el.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--mu)">Loading...</div>';
+  el.innerHTML = '<div class="skel-wrap"><div class="skel skel-card"></div><div class="skel skel-card"></div></div>';
   Promise.all([db.collection('orders').get(), db.collection('users').get()]).then(function(results) {
     var orders = results[0].docs.map(function(d) { return d.data(); });
     var users = results[1].docs.map(function(d) { return d.data(); });
@@ -1177,7 +1211,7 @@ function renderAorders() {
     + '<div class="tab-row">' + ['all', 'pending', 'in_transit', 'delivered', 'cancelled'].map(function(s, i) {
       return '<button class="tab-btn ' + (i === 0 ? 'active' : '') + '" onclick="filterAO(\'' + s + '\',this)">' + (s === 'all' ? 'All' : fmtStatus(s)) + '</button>';
     }).join('') + '</div>'
-    + '<div id="ao-list"><div style="text-align:center;padding:2rem;color:var(--mu)">Loading...</div></div>';
+    + '<div id="ao-list"><div class="skel-wrap"><div class="skel skel-card"></div><div class="skel skel-card"></div></div></div>';
   var unsub = db.collection('orders').onSnapshot(function(snap) {
     window._aOrders = snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); }).sort(function(a, b) { return (b.createdAt && b.createdAt.seconds || 0) - (a.createdAt && a.createdAt.seconds || 0); });
     renderAOList('all');
@@ -1249,7 +1283,7 @@ function adminUpd(id, status, price, dId) {
 // ═══ ADMIN - DRIVERS ═══
 function renderAdrivers() {
   var el = document.getElementById('v-adrivers');
-  el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--mu)">Loading...</div>';
+  el.innerHTML = '<div class="skel-wrap"><div class="skel skel-card"></div><div class="skel skel-card"></div></div>';
   Promise.all([db.collection('users').where('role', '==', 'driver').get(), db.collection('orders').get()]).then(function(results) {
     var drivers = results[0].docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
     var orders = results[1].docs.map(function(d) { return d.data(); });
@@ -1270,7 +1304,7 @@ function renderAdrivers() {
 // ═══ ADMIN - USERS ═══
 function renderAusers() {
   var el = document.getElementById('v-ausers');
-  el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--mu)">Loading...</div>';
+  el.innerHTML = '<div class="skel-wrap"><div class="skel skel-card"></div><div class="skel skel-card"></div></div>';
   Promise.all([db.collection('users').where('role', '==', 'customer').get(), db.collection('orders').get()]).then(function(results) {
     var customers = results[0].docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
     var orders = results[1].docs.map(function(d) { return d.data(); });
@@ -1312,7 +1346,7 @@ window.addEventListener('beforeinstallprompt', function(e) {
     if (document.getElementById('ib')) return;
     var b = document.createElement('div');
     b.id = 'ib';
-    b.style.cssText = 'position:fixed;bottom:5.5rem;left:1rem;right:1rem;background:linear-gradient(145deg,#1c1c1c,#141414);border:1px solid rgba(255,77,0,0.3);border-radius:12px;padding:1rem;display:flex;align-items:center;gap:0.8rem;z-index:50;box-shadow:0 4px 24px rgba(0,0,0,0.4)';
+    b.style.cssText = 'position:fixed;bottom:5.5rem;left:1rem;right:1rem;background:linear-gradient(145deg,#1c1c1c,#141414);border:1px solid rgba(var(--or-rgb),0.3);border-radius:12px;padding:1rem;display:flex;align-items:center;gap:0.8rem;z-index:50;box-shadow:0 4px 24px rgba(0,0,0,0.4)';
     b.innerHTML = '<span style="font-size:1.8rem">📦</span><div style="flex:1"><div style="font-weight:600;font-size:0.88rem">Install Delivery Hub</div><div style="font-size:0.72rem;color:var(--mu)">Add to home screen</div></div><button onclick="installPWA()" style="background:var(--or);color:white;border:none;border-radius:8px;padding:0.5rem 1rem;font-weight:700;font-size:0.78rem;cursor:pointer">Install</button><button onclick="document.getElementById(\'ib\').remove()" style="background:transparent;border:none;color:var(--mu);font-size:1.2rem;cursor:pointer;padding:0.2rem">✕</button>';
     document.body.appendChild(b);
   }, 3000);
@@ -1328,8 +1362,4 @@ function installPWA() {
 if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone) {
   setTimeout(function() {
     var h = document.createElement('div');
-    h.style.cssText = 'position:fixed;bottom:5.5rem;left:1rem;right:1rem;background:linear-gradient(145deg,#1c1c1c,#141414);border:1px solid rgba(255,77,0,0.25);border-radius:12px;padding:1rem;z-index:50;text-align:center';
-    h.innerHTML = '<div style="font-size:0.85rem;font-weight:600;margin-bottom:0.4rem">📱 Install on iPhone</div><div style="font-size:0.75rem;color:var(--mu)">Tap <strong style="color:white">Share</strong> then <strong style="color:white">Add to Home Screen</strong></div><button onclick="this.parentElement.remove()" style="margin-top:0.7rem;background:transparent;border:1px solid var(--mi);color:var(--mu);border-radius:6px;padding:0.3rem 1rem;font-size:0.75rem;cursor:pointer">Got it</button>';
-    document.body.appendChild(h);
-  }, 4000);
-}
+    h.style.cssText = 'position:fixed;bottom:5.5rem;left:1rem;right:1rem;background:linear-gradient(145deg,#1c1c1c,#141414);border:1px solid rgba(var(--or-rgb),0.25);border-radius:12px;padding:1rem;z-ind
