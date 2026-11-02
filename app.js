@@ -1,3 +1,4 @@
+window.DH_APP_BUILD = '2026-11-01-b';
 // ═══════════════════════════════════════
 // DELIVERY HUB - app.js
 // Firebase + All App Logic
@@ -750,7 +751,7 @@ function renderProfile() {
       // About
       + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">About</div>'
       + '<div class="info-row"><span class="info-key">App Version</span><span class="info-val">1.0.0</span></div>'
-      + '<div class="info-row"><span class="info-key">Build</span><span class="info-val">2026.10</span></div>'
+      + '<div class="info-row"><span class="info-key">Build</span><span class="info-val">' + (window.DH_APP_BUILD || '--') + '</span></div>'
       + '<div class="info-row" style="cursor:pointer" onclick="openHelp(\'terms\')"><span class="info-key">Terms of Service</span><span style="color:var(--mu);font-size:0.8rem">→</span></div>'
       + '<div class="info-row" style="cursor:pointer" onclick="openHelp(\'privacy\')"><span class="info-key">Privacy Policy</span><span style="color:var(--mu);font-size:0.8rem">→</span></div></div>'
       // Danger Zone
@@ -1108,7 +1109,7 @@ function settingsSections(role) {
     + setLink('Report a Problem', '→', "openHelp('report')") + '</div>'
     + '<div class="card"><div class="eyebrow" style="margin-bottom:0.8rem">About</div>'
     + setInfo('App Version', '1.0.0')
-    + setInfo('Build', '2026.10')
+    + setInfo('Build', window.DH_APP_BUILD || '--')
     + setLink('Terms of Service', '→', "openHelp('terms')")
     + setLink('Privacy Policy', '→', "openHelp('privacy')") + '</div>'
     + '<div class="card" style="border-color:rgba(239,68,68,0.2)">'
@@ -1362,4 +1363,4 @@ function installPWA() {
 if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone) {
   setTimeout(function() {
     var h = document.createElement('div');
-    h.style.cssText = 'position:fixed;bottom:5.5rem;left:1rem;right:1rem;background:linear-gradient(145deg,#1c1c1c,#141414);border:1px solid rgba(var(--or-rgb),0.25);border-radius:12px;padding:1rem;z-ind
+    h.style.cssText = 'position:fixed;bottom:5.5rem;left:1rem;right:1rem;background:linear-gradient(145deg,#1c1c1c,#1
