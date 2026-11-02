@@ -579,31 +579,43 @@ button:focus-visible,.nav-item:focus-visible,.qa-btn:focus-visible,.form-input:f
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script>
-// Failsafe: if app.js breaks, show login screen + error text instead of endless loading
-window.addEventListener('error', function(e) {
+var DH_INDEX_BUILD = '2026-11-01-b';
+// Failsafe: if app.js is broken or out of date, show the login screen plus a clear message
+function dhShowAuth() {
   var l = document.getElementById('loading');
   var a = document.getElementById('auth');
   var ap = document.getElementById('app');
   if (l) l.classList.add('hidden');
   if (a && ap && ap.classList.contains('hidden')) a.classList.remove('hidden');
-  if (!document.getElementById('err-banner')) {
-    var b = document.createElement('div');
+}
+function dhBanner(msg) {
+  var b = document.getElementById('err-banner');
+  if (!b) {
+    b = document.createElement('div');
     b.id = 'err-banner';
-    b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#7f1d1d;color:#fff;font-size:12px;padding:10px 14px;z-index:99999;word-break:break-word';
-    b.textContent = 'Error: ' + (e.message || 'script failed') + (e.lineno ? ' (line ' + e.lineno + ')' : '');
+    b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#7f1d1d;color:#fff;font-size:12px;line-height:1.5;padding:10px 14px;z-index:99999;word-break:break-word';
     document.body.appendChild(b);
+  }
+  b.textContent = msg;
+}
+window.addEventListener('error', function(e) {
+  dhShowAuth();
+  var file = (e.filename || '').split('?')[0].split('/').pop() || 'page';
+  dhBanner('Error in ' + file + (e.lineno ? ' line ' + e.lineno : '') + ': ' + (e.message || 'script failed')
+    + ' [index ' + DH_INDEX_BUILD + ' / app ' + (window.DH_APP_BUILD || 'not loaded') + ']');
+});
+window.addEventListener('load', function() {
+  if (window.DH_APP_BUILD !== DH_INDEX_BUILD && !document.getElementById('err-banner')) {
+    dhShowAuth();
+    dhBanner('Files out of sync: index.html is ' + DH_INDEX_BUILD + ' but app.js is '
+      + (window.DH_APP_BUILD || 'missing or broken') + '. Upload index.html and app.js together, then reload.');
   }
 });
 setTimeout(function() {
   var l = document.getElementById('loading');
-  var a = document.getElementById('auth');
-  var ap = document.getElementById('app');
-  if (l && !l.classList.contains('hidden')) {
-    l.classList.add('hidden');
-    if (a && ap && ap.classList.contains('hidden')) a.classList.remove('hidden');
-  }
+  if (l && !l.classList.contains('hidden')) dhShowAuth();
 }, 4000);
 </script>
-<script src="app.js"></script>
+<script src="app.js?v=2026-11-01-b"></script>
 </body>
 </html>
