@@ -9,6 +9,7 @@
     { "src": "/manifest.json", "dest": "/manifest.json" },
     { "src": "/icon-192.png", "dest": "/icon-192.png" },
     { "src": "/icon-512.png", "dest": "/icon-512.png" },
+    { "src": "/status.html", "dest": "/status.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
